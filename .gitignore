@@ -1,0 +1,17 @@
+# dependencies
+node_modules/
+
+# local tooling
+.bin/
+.corepack/
+
+# macOS
+.DS_Store
+
+# npm
+*.tgz
+npm-debug.log*
+
+# editor
+.vscode/
+.idea/

@@ -1,0 +1,6 @@
+# dsh-stats-hud bundle patch: load the plugin as a loader entry so the
+# client-modules host scan picks up its `dsh.client` declaration and serves
+# lib/client.js to the browser roster.
+- insert:
+    - id: dsh-stats-hud
+      name: 'dsh-stats-hud'
