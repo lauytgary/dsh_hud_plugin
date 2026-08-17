@@ -16,7 +16,17 @@ A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
 | `CACHE HIT` bar | Cache-hit % | 0-100% | <50% red, <80% yellow, ≥80% green |
 | `CONTEXT` rolling counter | Three odometer rows: CACHE HIT (green) / CACHE MISSED (orange) / OUTPUT (pink) | Drums spin up from 0 on mount; digits roll up on increase (carry 9→0), down on decrease | — |
 
-While the agent is running the whole panel breathes and bars pulse. The panel auto-hides below 1150px viewport width.
+While the agent is running the whole panel breathes and bars pulse.
+
+## Responsive layout
+
+The HUD adapts to the free space right of the chat column (measured live with a ResizeObserver, so sidebar drags, the details drawer and window resizes all count):
+
+| Tier | Condition (free space) | Shows |
+| --- | --- | --- |
+| `full` | ≥ 200px | Everything |
+| `mini` | ≥ 90px | Clock + compact rolling rows (ST/TR/HIT/MISS/OUT) |
+| `hidden` | < 90px | Nothing (element stays mounted, `display:none`) |
 
 ## Requirements
 
@@ -72,7 +82,7 @@ All constants live in `lib/client.js`:
 - `SpeedGauge`'s `redline = 200` (initial; `while (tps > redline) redline += 100` auto-scales)
 - `ContextUsageBar`: segment colors and the ≥80% solid-red threshold; the hover tooltip reads `systemTokens` / `toolsTokens` / `messageTokens` from the `contextBreakdown` projection
 - Rolling counter: `DRUM` (3× 0-9), `DRUM_H = 15` (px per digit), `RollingValue`'s carry/borrow formula and mount spin-up
-- CSS: `position:fixed; right:12px` and the `@media (max-width:1150px)` hide rule
+- CSS: `position:fixed; right:12px`; tiers in `tierOf(space)` (`≥200` full / `≥90` mini / else hidden) and the `.gsh-root.gsh-*` rules
 
 ## Publishing to npm (optional)
 
