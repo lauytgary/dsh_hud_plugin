@@ -25,7 +25,7 @@ The HUD adapts to the free space right of the chat column (measured live with a 
 | Tier | Condition (free space) | Shows |
 | --- | --- | --- |
 | `full` | ≥ 200px | Everything |
-| `mini` | ≥ 90px | Clock + compact rolling rows (ST/TR/HIT/MISS/OUT) |
+| `mini` | ≥ 90px | Clock (short PEAK/OFF PEAK badge) + compact rolling rows (Step/Turn/HIT/MISS/OUT) |
 | `hidden` | < 90px | Nothing (element stays mounted, `display:none`) |
 
 ## Requirements
