@@ -1,3 +1,9 @@
+<div align="center">
+
+**English** · [**简体中文**](README.zh-CN.md)
+
+</div>
+
 # dsh-stats-hud
 
 A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): the session's stats become game-style level bars in a **vertical column fixed to the far right edge** of the web UI — without touching the original stats line.
@@ -40,7 +46,7 @@ The HUD adapts to the free space right of the chat column (measured live with a 
 dsh plugin --profile web add /path/to/dsh-stats-hud
 
 # or straight from GitHub
-dsh plugin --profile web add https://github.com/<your-name>/dsh-stats-hud
+dsh plugin --profile web add https://github.com/lauytgary/dsh_hud
 ```
 
 Then **restart `dsh web`** (loader entries are scanned at boot) and refresh the page. The package is installed as a `link:` dependency — after editing `lib/client.js` locally, only a restart is needed, no reinstall.
