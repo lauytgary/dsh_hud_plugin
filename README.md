@@ -24,6 +24,10 @@ A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
 
 While the agent is running the whole panel breathes and bars pulse.
 
+Hovering the `CONTEXT USAGE` bar pops up a tooltip with the token breakdown:
+
+![hover tooltip](docs/mouse_over.png)
+
 ## Responsive layout
 
 The HUD adapts to the free space right of the chat column (measured live with a ResizeObserver, so sidebar drags, the details drawer and window resizes all count):
@@ -33,6 +37,10 @@ The HUD adapts to the free space right of the chat column (measured live with a 
 | `full` | ≥ 200px | Everything |
 | `mini` | ≥ 90px | Clock (short PEAK/OFF PEAK badge) + compact rolling rows (Step/Turn/HIT/MISS/OUT) |
 | `hidden` | < 90px | Nothing (element stays mounted, `display:none`) |
+
+The `mini` tier in a narrow window:
+
+![mini tier](docs/mini.png)
 
 ## Requirements
 

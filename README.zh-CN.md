@@ -24,6 +24,10 @@
 
 Agent 运行期间，整个面板会「呼吸」起伏，进度条随之脉动。
 
+悬停在 `CONTEXT USAGE` 条上会弹出 token 明细提示：
+
+![悬停提示](docs/mouse_over.png)
+
 ## 响应式布局
 
 HUD 会根据聊天栏右侧的可用空间自适应（通过 ResizeObserver 实时测量，因此拖拽侧栏、打开详情抽屉、调整窗口大小都会生效）：
@@ -33,6 +37,10 @@ HUD 会根据聊天栏右侧的可用空间自适应（通过 ResizeObserver 实
 | `full` | ≥ 200px | 全部内容 |
 | `mini` | ≥ 90px | 时钟（短版 PEAK/OFF PEAK 徽章）+ 紧凑滚动行（Step/Turn/HIT/MISS/OUT） |
 | `hidden` | < 90px | 不显示（元素保持挂载，`display:none`） |
+
+`mini` 档位在窄窗口下的效果：
+
+![mini 档位](docs/mini.png)
 
 ## 环境要求
 
