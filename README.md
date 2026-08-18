@@ -59,6 +59,10 @@ dsh plugin --profile web add https://github.com/lauytgary/dsh_hud
 
 Then **restart `dsh web`** (loader entries are scanned at boot) and refresh the page. The package is installed as a `link:` dependency — after editing `lib/client.js` locally, only a restart is needed, no reinstall.
 
+The plugin then shows up in **Settings → Plugins**:
+
+![dsh-stats-hud in the plugin list](docs/plugin_eng.png)
+
 ## Uninstall
 
 ```sh

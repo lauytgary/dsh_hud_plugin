@@ -59,6 +59,10 @@ dsh plugin --profile web add https://github.com/lauytgary/dsh_hud
 
 然后**重启 `dsh web`**（加载器条目在启动时扫描）并刷新页面。该插件以 `link:` 依赖方式安装——在本地修改 `lib/client.js` 后只需重启，无需重新安装。
 
+安装后可在**设置 → Plugins（插件列表）**中看到它：
+
+![插件列表中的 dsh-stats-hud](docs/plugin_chi.png)
+
 ## 卸载
 
 ```sh
