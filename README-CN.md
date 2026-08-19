@@ -84,12 +84,24 @@ dsh plugin --profile web remove dsh-stats-hud
 dsh-stats-hud/
 ├── package.json          # dsh.bundle（补丁层）+ dsh.client（浏览器入口）
 ├── cordis.patch.yml      # 将插件插入加载器条目
-└── lib/
-    ├── index.js          # 宿主端无操作（纯浏览器插件）
-    └── client.js         # 浏览器打包：HUD 组件 + 插槽注册
+├── lib/
+│   ├── index.js          # 宿主端无操作（纯浏览器插件）
+│   └── client.js         # 浏览器打包：HUD 组件 + 插槽注册
+└── test/
+    └── format.test.js    # 纯函数单元测试（node:test，零依赖）
 ```
 
 `lib/client.js` 是手写的加载器打包文件（`window.__ModuleLoader__.load`）——无需构建步骤。
+
+## 开发与测试
+
+```sh
+npm test   # 纯函数单元测试（node:test，零依赖；需要 Node ≥ 18）
+```
+
+测试会用 Node VM 加载 `lib/client.js`（stub 掉 loader，无需 DOM），覆盖纯函数：
+`formatTokens` / `formatDuration` / `formatTps` / `tierOf` / `billedInputTokens` / `cacheHitPercent`。
+test-only 的 `__test` 导出由 `DSH_HUD_TEST` 环境变量门控，浏览器端不会触发，bundle 不受影响。
 
 ## 参数调优
 
@@ -102,7 +114,7 @@ dsh-stats-hud/
 - `SpeedGauge` 的 `redline = 200`（初始值；以 100 tok/s 为步进自动缩放）
 - `ContextUsageBar`：分段颜色和 ≥80% 实心红阈值；悬停提示从 `contextBreakdown` 投影读取 `systemTokens` / `toolsTokens` / `messageTokens`
 - 滚动计数器：`DRUM`（3× 0-9）、`DRUM_H = 15`（每位数像素）、`RollingValue` 的进位 / 借位公式以及挂载时的旋转启动
-- CSS：`position:fixed; right:12px`；档位在 `tierOf(space, width)` 中——`width < 800` → `hidden`（窗口宽度兜底）、`space >= 180` → `full`、其余 → `mini`（测量失败时回退为 `full`）以及 `.gsh-root.gsh-*` 规则
+- CSS：`position:fixed; right:12px`；档位在 `tierOf(space, width)` 中——`width < 800` → `hidden`（窗口宽度兜底）、`space >= 180` → `full`、其余 → `mini`（测量失败时回退为 `full`）以及 `.gsh-root.gsh-*` 规则；`@media (prefers-reduced-motion: reduce)` 会停用脉冲与过渡动画
 
 ## 发布到 npm（可选）
 

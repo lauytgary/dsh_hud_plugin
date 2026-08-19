@@ -84,12 +84,26 @@ dsh plugin --profile web remove dsh-stats-hud
 dsh-stats-hud/
 ├── package.json          # dsh.bundle (patch layer) + dsh.client (browser entry)
 ├── cordis.patch.yml      # inserts the plugin into loader entries
-└── lib/
-    ├── index.js          # host-side no-op (pure browser plugin)
-    └── client.js         # browser bundle: HUD components + slot registration
+├── lib/
+│   ├── index.js          # host-side no-op (pure browser plugin)
+│   └── client.js         # browser bundle: HUD components + slot registration
+└── test/
+    └── format.test.js    # pure-function unit tests (node:test, zero deps)
 ```
 
 `lib/client.js` is a hand-written loader bundle (`window.__ModuleLoader__.load`) — no build step needed.
+
+## Development & testing
+
+```sh
+npm test   # pure-function unit tests (node:test, no dependencies; Node ≥ 18)
+```
+
+The tests load `lib/client.js` in a Node VM with a stubbed loader (no DOM
+needed) and exercise the pure helpers — `formatTokens`, `formatDuration`,
+`formatTps`, `tierOf`, `billedInputTokens`, `cacheHitPercent`. The test-only
+`__test` export is gated behind the `DSH_HUD_TEST` env var, so the browser
+bundle is unaffected.
 
 ## Tuning
 
@@ -102,7 +116,7 @@ All constants live in `lib/client.js`:
 - `SpeedGauge`'s `redline = 200` (initial; auto-scales in 100 tok/s steps)
 - `ContextUsageBar`: segment colors and the ≥80% solid-red threshold; the hover tooltip reads `systemTokens` / `toolsTokens` / `messageTokens` from the `contextBreakdown` projection
 - Rolling counter: `DRUM` (3× 0-9), `DRUM_H = 15` (px per digit), `RollingValue`'s carry/borrow formula and mount spin-up
-- CSS: `position:fixed; right:12px`; tiers in `tierOf(space, width)` — `width < 800` → `hidden` (window-width floor), `space >= 180` → `full`, else `mini` (measurement failure falls back to `full`) — plus the `.gsh-root.gsh-*` rules
+- CSS: `position:fixed; right:12px`; tiers in `tierOf(space, width)` — `width < 800` → `hidden` (window-width floor), `space >= 180` → `full`, else `mini` (measurement failure falls back to `full`) — plus the `.gsh-root.gsh-*` rules; `@media (prefers-reduced-motion: reduce)` disables pulses and transitions
 
 ## Publishing to npm (optional)
 
