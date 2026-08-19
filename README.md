@@ -56,7 +56,7 @@ The `mini` tier in a narrow window:
 dsh plugin --profile web add /path/to/dsh-stats-hud
 
 # or straight from GitHub
-dsh plugin --profile web add https://github.com/lauytgary/dsh_hud
+dsh plugin --profile web add https://github.com/lauytgary/dsh_hud_plugin
 ```
 
 Then **restart `dsh web`** (loader entries are scanned at boot) and refresh the page. The package is installed as a `link:` dependency — after editing `lib/client.js` locally, only a restart is needed, no reinstall.

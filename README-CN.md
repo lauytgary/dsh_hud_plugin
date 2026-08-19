@@ -56,7 +56,7 @@ HUD 会根据聊天栏右侧的可用空间自适应（通过 ResizeObserver 实
 dsh plugin --profile web add /path/to/dsh-stats-hud
 
 # 或直接从 GitHub 安装
-dsh plugin --profile web add https://github.com/lauytgary/dsh_hud
+dsh plugin --profile web add https://github.com/lauytgary/dsh_hud_plugin
 ```
 
 然后**重启 `dsh web`**（加载器条目在启动时扫描）并刷新页面。该插件以 `link:` 依赖方式安装——在本地修改 `lib/client.js` 后只需重启，无需重新安装。
