@@ -113,6 +113,12 @@ npm publish
 dsh plugin --profile web add dsh-stats-hud
 ```
 
+## Contact
+
+Questions, ideas or issues? Open a discussion on GitHub:
+
+- [Discussions](https://github.com/lauytgary/dsh_hud_plugin/discussions)
+
 ## License
 
 MIT
