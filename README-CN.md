@@ -99,7 +99,7 @@ dsh-stats-hud/
 - 高峰时段：`LocalClock` 的 `bjMin >= 540 && bjMin < 720`（北京时间 9-12 点）和 `>= 840 && < 1080`（14-18 点），其中 `bjMin = ((now.getTime() + 8*3600e3) / 60000) % 1440`
 - `MissionRolling`：步骤 / 回合的滚动滚筒（无满量程）
 - `ChannelBar`：分段比例 = `llmMs / (llmMs + toolMs)`（无上限）
-- `SpeedGauge` 的 `redline = 200`（初始值；`while (tps > redline) redline += 100` 自动缩放）
+- `SpeedGauge` 的 `redline = 200`（初始值；以 100 tok/s 为步进自动缩放）
 - `ContextUsageBar`：分段颜色和 ≥80% 实心红阈值；悬停提示从 `contextBreakdown` 投影读取 `systemTokens` / `toolsTokens` / `messageTokens`
 - 滚动计数器：`DRUM`（3× 0-9）、`DRUM_H = 15`（每位数像素）、`RollingValue` 的进位 / 借位公式以及挂载时的旋转启动
 - CSS：`position:fixed; right:12px`；档位在 `tierOf(space, width)` 中——`width < 800` → `hidden`（窗口宽度兜底）、`space >= 180` → `full`、其余 → `mini`（测量失败时回退为 `full`）以及 `.gsh-root.gsh-*` 规则

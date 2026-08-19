@@ -99,7 +99,7 @@ All constants live in `lib/client.js`:
 - Peak hours: `LocalClock`'s `bjMin >= 540 && bjMin < 720` (Beijing 9-12h) and `>= 840 && < 1080` (14-18h), with `bjMin = ((now.getTime() + 8*3600e3) / 60000) % 1440`
 - `MissionRolling`: rolling drums for steps/turns (no full scale)
 - `ChannelBar`: segment ratio = `llmMs / (llmMs + toolMs)` (no cap)
-- `SpeedGauge`'s `redline = 200` (initial; `while (tps > redline) redline += 100` auto-scales)
+- `SpeedGauge`'s `redline = 200` (initial; auto-scales in 100 tok/s steps)
 - `ContextUsageBar`: segment colors and the ≥80% solid-red threshold; the hover tooltip reads `systemTokens` / `toolsTokens` / `messageTokens` from the `contextBreakdown` projection
 - Rolling counter: `DRUM` (3× 0-9), `DRUM_H = 15` (px per digit), `RollingValue`'s carry/borrow formula and mount spin-up
 - CSS: `position:fixed; right:12px`; tiers in `tierOf(space, width)` — `width < 800` → `hidden` (window-width floor), `space >= 180` → `full`, else `mini` (measurement failure falls back to `full`) — plus the `.gsh-root.gsh-*` rules
