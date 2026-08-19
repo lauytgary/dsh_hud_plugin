@@ -5,6 +5,9 @@
   "private": true,
   "type": "module",
   "main": "lib/index.js",
+  "scripts": {
+    "test": "node --test"
+  },
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
