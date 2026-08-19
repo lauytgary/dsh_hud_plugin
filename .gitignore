@@ -15,3 +15,6 @@ npm-debug.log*
 # editor
 .vscode/
 .idea/
+
+# local agent instructions (machine-local, not for GitHub)
+AGENTS.local.md
