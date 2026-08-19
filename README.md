@@ -32,11 +32,13 @@ Hovering the `CONTEXT USAGE` bar pops up a tooltip with the token breakdown:
 
 The HUD adapts to the free space right of the chat column (measured live with a ResizeObserver, so sidebar drags, the details drawer and window resizes all count):
 
-| Tier | Condition (free space) | Shows |
+| Tier | Condition | Shows |
 | --- | --- | --- |
-| `full` | ≥ 200px | Everything |
-| `mini` | ≥ 90px | Clock (short PEAK/OFF PEAK badge) + compact rolling rows (Step/Turn/HIT/MISS/OUT) |
-| `hidden` | < 90px | Nothing (element stays mounted, `display:none`) |
+| `full` | Window ≥ 800px and free space ≥ 180px | Everything |
+| `mini` | Window ≥ 800px and free space < 180px | Clock (short PEAK/OFF PEAK badge) + compact rolling rows (Step/Turn/HIT/MISS/OUT) |
+| `hidden` | Window < 800px | Nothing (element stays mounted, `display:none`) |
+
+The window width is a hard floor: below 800px the panel hides even with room to spare, and only the measured space decides `full` vs `mini` (the full panel needs 164px + 12px margin). `mini` may slightly overlap the chat on narrow windows — safe because the panel is click-through. If the chat column can't be measured, the panel falls back to `full`.
 
 The `mini` tier in a narrow window:
 
@@ -100,7 +102,7 @@ All constants live in `lib/client.js`:
 - `SpeedGauge`'s `redline = 200` (initial; `while (tps > redline) redline += 100` auto-scales)
 - `ContextUsageBar`: segment colors and the ≥80% solid-red threshold; the hover tooltip reads `systemTokens` / `toolsTokens` / `messageTokens` from the `contextBreakdown` projection
 - Rolling counter: `DRUM` (3× 0-9), `DRUM_H = 15` (px per digit), `RollingValue`'s carry/borrow formula and mount spin-up
-- CSS: `position:fixed; right:12px`; tiers in `tierOf(space)` (`≥200` full / `≥90` mini / else hidden) and the `.gsh-root.gsh-*` rules
+- CSS: `position:fixed; right:12px`; tiers in `tierOf(space, width)` — `width < 800` → `hidden` (window-width floor), `space >= 180` → `full`, else `mini` (measurement failure falls back to `full`) — plus the `.gsh-root.gsh-*` rules
 
 ## Publishing to npm (optional)
 

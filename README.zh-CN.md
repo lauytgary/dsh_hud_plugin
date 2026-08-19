@@ -32,11 +32,13 @@ Agent 运行期间，整个面板会「呼吸」起伏，进度条随之脉动�
 
 HUD 会根据聊天栏右侧的可用空间自适应（通过 ResizeObserver 实时测量，因此拖拽侧栏、打开详情抽屉、调整窗口大小都会生效）：
 
-| 档位 | 条件（可用空间） | 显示内容 |
+| 档位 | 条件 | 显示内容 |
 | --- | --- | --- |
-| `full` | ≥ 200px | 全部内容 |
-| `mini` | ≥ 90px | 时钟（短版 PEAK/OFF PEAK 徽章）+ 紧凑滚动行（Step/Turn/HIT/MISS/OUT） |
-| `hidden` | < 90px | 不显示（元素保持挂载，`display:none`） |
+| `full` | 窗口 ≥ 800px 且可用空间 ≥ 180px | 全部内容 |
+| `mini` | 窗口 ≥ 800px 且可用空间 < 180px | 时钟（短版 PEAK/OFF PEAK 徽章）+ 紧凑滚动行（Step/Turn/HIT/MISS/OUT） |
+| `hidden` | 窗口 < 800px | 不显示（元素保持挂载，`display:none`） |
+
+窗口宽度是硬性底线：低于 800px 时即使空间充足也会隐藏面板，只有测得的空间决定 `full` 还是 `mini`（完整面板需要 164px + 12px 边距）。窄窗口下 `mini` 可能与聊天栏轻微重叠——由于面板可点击穿透，这很安全。若无法测量聊天栏，面板会回退为 `full`。
 
 `mini` 档位在窄窗口下的效果：
 
@@ -100,7 +102,7 @@ dsh-stats-hud/
 - `SpeedGauge` 的 `redline = 200`（初始值；`while (tps > redline) redline += 100` 自动缩放）
 - `ContextUsageBar`：分段颜色和 ≥80% 实心红阈值；悬停提示从 `contextBreakdown` 投影读取 `systemTokens` / `toolsTokens` / `messageTokens`
 - 滚动计数器：`DRUM`（3× 0-9）、`DRUM_H = 15`（每位数像素）、`RollingValue` 的进位 / 借位公式以及挂载时的旋转启动
-- CSS：`position:fixed; right:12px`；档位在 `tierOf(space)` 中（`≥200` full / `≥90` mini / 其余 hidden）以及 `.gsh-root.gsh-*` 规则
+- CSS：`position:fixed; right:12px`；档位在 `tierOf(space, width)` 中——`width < 800` → `hidden`（窗口宽度兜底）、`space >= 180` → `full`、其余 → `mini`（测量失败时回退为 `full`）以及 `.gsh-root.gsh-*` 规则
 
 ## 发布到 npm（可选）
 
