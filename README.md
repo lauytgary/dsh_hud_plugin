@@ -10,11 +10,20 @@ A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
 
 ![screenshot](docs/screenshot.png)
 
+## Changelog
+
+**2026-08-24 — Peak / off-peak windows updated**
+
+- `CLOCK` badge now follows the official DeepSeek API peak-valley pricing: peak = **Mon–Fri** Beijing 09:00-12:00 / 14:00-18:00 (i.e. Mon–Fri 01:00-04:00 / 06:00-10:00 UTC); **weekends are always OFF-PEAK** (previously weekends inside those windows were wrongly shown as PEAK).
+- Refactored the check into the pure `isDsApiPeak(date)` helper (weekday resolved on the Beijing calendar, so it is correct in any timezone) and exposed it via the test-only `__test` export.
+- Added 3 unit-test groups covering window edges, weekends and the Beijing/UTC day boundary (9 tests total, all green).
+- Docs synced (this README, `README-CN.md` and the `Tuning` section).
+
 ## Instruments (all-English, LLM terminology)
 
 | Instrument | Data | Full scale | Past full scale |
 | --- | --- | --- | --- |
-| `CLOCK` badge | Local time (24h) + `DS API PEAK` / `DS API OFF PEAK` rate | Peak = Beijing 09:00-12:00 / 14:00-18:00 (auto-converted from local time) | PEAK orange tint, OFF-PEAK green tint |
+| `CLOCK` badge | Local time (24h) + `DS API PEAK` / `DS API OFF PEAK` rate | Peak = Mon–Fri Beijing 09:00-12:00 / 14:00-18:00 (i.e. Mon–Fri 01:00-04:00 / 06:00-10:00 UTC); weekends and all other hours are OFF-PEAK (half price) | PEAK orange tint, OFF-PEAK green tint |
 | `STEPS / TURN` rolling rows | Steps / turns as odometer drums (like the CONTEXT rows) | — | Drums spin up on mount, roll on change |
 | `LLM / TOOLS` dual bar | Two columns (labels over values), bar segments = raw LLM:TOOLS time ratio | No cap — 2:1 time means 2:1 bar | — |
 | `THROUGHPUT` gauge | tokens/s (throughput), centered title, combined centered readout (`146 tok/s`) | Redline auto-scales 200→300→400… (arc ticks follow) | — |
@@ -110,7 +119,7 @@ bundle is unaffected.
 All constants live in `lib/client.js`:
 
 - Labels: the `L` object (all-English LLM terminology)
-- Peak hours: `LocalClock`'s `bjMin >= 540 && bjMin < 720` (Beijing 9-12h) and `>= 840 && < 1080` (14-18h), with `bjMin = ((now.getTime() + 8*3600e3) / 60000) % 1440`
+- Peak hours: `LocalClock` delegates to `isDsApiPeak(date)`, which checks the Beijing (UTC+8) weekday `bjDow >= 1 && bjDow <= 5` (Mon-Fri) together with `bjMin >= 540 && bjMin < 720` (9-12h) / `>= 840 && < 1080` (14-18h), where `bjMin`/`bjDow` come from `new Date(date.getTime() + 8*3600e3)` — weekends are always off-peak
 - `MissionRolling`: rolling drums for steps/turns (no full scale)
 - `ChannelBar`: segment ratio = `llmMs / (llmMs + toolMs)` (no cap)
 - `SpeedGauge`'s `redline = 200` (initial; auto-scales in 100 tok/s steps)
