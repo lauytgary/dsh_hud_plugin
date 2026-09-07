@@ -1,3 +1,5 @@
+![dsh-stats-hud — 将实时会话统计重塑为科幻 HUD](docs/social-preview.png)
+
 <div align="center">
 
 [**English**](README.md) · **简体中文**
@@ -12,12 +14,45 @@
 
 ## 更新记录
 
+**2026-09-08 — 兼容 DSH 0.1.2-rc.1（插槽注册改为「先宣告、后挂载」）**
+
+- DSH `0.1.2-rc.1` 重构了 Web 客户端的插槽体系：`slots.register()` 现在只是纯粹的「挂载」API，若目标插槽尚未由**父条目的 children table 宣告**，会直接抛错。composer 子树（包括 `conversation.composer.dock`）是由会话 UI 树**惰性宣告**的——时机在 plugin（loader 条目）apply 之后，因此原先在 `apply()` 中直接调用 `ctx.slots.register(...)` 会失败，报 `slot "conversation.composer.dock" is not declared (a parent entry's children table must declare it)`，DSH 启动时提示 **Failed to load plugins**。
+- 现在改为通过 `ctx.slots.inject("conversation.composer.dock", () => ctx.slots.register({ name, id, order }, …))` 注册——与原生 StatsLine 使用同一插槽的方式完全一致。`slots.inject` 在插槽已宣告时立即执行工厂函数，否则等待其（重新）宣告后再执行；等待与注册的生命周期都挂在插件自己的 fiber 上，卸载时自动清理。
+- 除此之外无需任何改动：dock 插槽的标准 props（`useSession` / `useProjection`）、`[data-composer-card]` / `data-slot` DOM 标记以及 HUD 读取的所有投影在 `0.1.2-rc.1` 中均未变化（已对照所安装的包源码逐一确认）。
+- 同步更新文档（本文件与 `README.md`）。
+
 **2026-08-24 — 更新尖峰 / 错峰时段**
 
 - `CLOCK` 徽章现按 DeepSeek 官方峰谷定价执行：尖峰 = **周一至周五** 北京时间 09:00-12:00 / 14:00-18:00（即周一至周五 01:00-04:00 / 06:00-10:00 UTC）；**周末一律为错峰**（此前周末这两个时段会被错误显示为 PEAK）。
 - 将判断重构为纯函数 `isDsApiPeak(date)`（按北京日历的星期判断，任何时区都正确），并加入 test-only 的 `__test` 导出。
 - 新增 3 组单元测试，覆盖窗口边界、周末与北京/UTC 跨日边界（共 9 个测试，全部通过）。
 - 同步更新文档（本文件、`README.md` 与「参数调优」一节）。
+
+## 从旧版 DSH 升级
+
+DSH 自 `0.1.2-rc.1` 起把插槽注册改为「先宣告、后挂载」后，在此改动之前安装的
+插件会在启动时报错：
+
+```
+Failed to load plugins
+dsh-stats-hud
+failed to apply loader entry … (dsh-stats-hud): slot "conversation.composer.dock" is not declared (a parent entry's children table must declare it)
+```
+
+把插件更新到修复版（见上方 2026-09-08 的更新记录），然后**重启 `dsh web`**
+（loader 条目在启动时扫描）：
+
+- **从本地仓库安装**（`link:` 依赖）：更新仓库内容（`git pull`，或把新文件拷
+  过去）后直接重启即可，无需重新安装——profile 直接指向该仓库，新的
+  `lib/client.js` 会原样被加载。
+- **从 GitHub 或 npm 安装**：用 `dsh plugin --profile web update dsh-stats-hud`
+  重新解析最新版本，或先 `remove` 再重新 `add` 该包，然后重启。
+
+快速确认是否已更新到修复版：插件客户端代码应包含新的注册写法
+`ctx.slots.inject("conversation.composer.dock", …)`（见 `lib/client.js`）。
+
+若重启后仍弹出错误，请强制刷新浏览器页面（`Cmd+Shift+R`）——插件的浏览器代
+码按页面加载缓存。
 
 ## 仪表（全英文、LLM 术语）
 
@@ -55,7 +90,7 @@ HUD 会根据聊天栏右侧的可用空间自适应（通过 ResizeObserver 实
 
 ## 环境要求
 
-- DeepSeek Harness `dsh`（已在 0.1.0-rc.6、macOS 上测试）
+- DeepSeek Harness `dsh`（已在 0.1.0-rc.6 → 0.1.2-rc.1、macOS 上测试；自 `0.1.2-rc.1` 起插槽注册改为「先宣告、后挂载」，需使用 `ctx.slots.inject` 模式——见更新记录）
 - pnpm（用于插件管理）
 
 ## 安装
@@ -82,7 +117,7 @@ dsh plugin --profile web remove dsh-stats-hud
 
 ## 工作原理
 
-- 注册到 `conversation.composer.dock` 插槽（id `dsh-stats-hud`，顺序 1）——**只是为了拿到会话作用域的 hooks**（`useSession` / `useProjection`）；面板本身是 `position: fixed`，不占用布局空间，原有统计行保持不变。
+- 注册到 `conversation.composer.dock` 插槽（id `dsh-stats-hud`，顺序 1）——**只是为了拿到会话作用域的 hooks**（`useSession` / `useProjection`）；面板本身是 `position: fixed`，不占用布局空间，原有统计行保持不变。注册通过 `ctx.slots.inject(...)` 进行——新版 DSH 要求插槽先由其父条目声明，`inject` 会等待该声明就绪后再注册。
 - 数据来自与原生界面相同的投影：`useProjection("sessionStats")`、`useProjection("tokenUsage")`、`useProjection("contextPressure")` 和 `useProjection("contextBreakdown")`——宿主端零改动。
 - `exports.inject = ["slots"]` 是必需的：DSH 的 ctx 是严格代理，访问未声明的服务会抛错（`cannot get property "locale" without inject`）。
 - 面板是 `pointer-events: none`（点击穿透）；只有 CONTEXT USAGE 条重新启用了指针事件，以便悬停提示生效。

@@ -1,3 +1,5 @@
+![dsh-stats-hud — live session stats reimagined as a sci-fi HUD](docs/social-preview.png)
+
 <div align="center">
 
 **English** · [**简体中文**](README-CN.md)
@@ -12,12 +14,47 @@ A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
 
 ## Changelog
 
+**2026-09-08 — DSH 0.1.2-rc.1 compatibility (slot registration became declaration-gated)**
+
+- DSH `0.1.2-rc.1` reworked the web client's slot system: `slots.register()` is now a pure *attachment* API and throws unless the target slot has already been **declared by a parent entry's children table**. The composer subtree — including `conversation.composer.dock` — is declared lazily by the conversation UI tree, i.e. *after* plugin loader entries have applied, so the old direct `ctx.slots.register(...)` call in `apply()` failed with `slot "conversation.composer.dock" is not declared (a parent entry's children table must declare it)` and DSH showed **Failed to load plugins** at startup.
+- Registration now goes through `ctx.slots.inject("conversation.composer.dock", () => ctx.slots.register({ name, id, order }, …))` — the same pattern the stock StatsLine uses for the very same slot. `slots.inject` runs the factory immediately when the slot is already declared, otherwise waits for its (re)declaration, and the whole wait + registration rides the plugin's own fiber for cleanup.
+- Nothing else needed to change: the dock slot's standard props (`useSession` / `useProjection`), the `[data-composer-card]` / `data-slot` DOM markers and every projection the HUD reads are unchanged in `0.1.2-rc.1` (verified against the installed package sources).
+- Docs synced (this README and `README-CN.md`).
+
 **2026-08-24 — Peak / off-peak windows updated**
 
 - `CLOCK` badge now follows the official DeepSeek API peak-valley pricing: peak = **Mon–Fri** Beijing 09:00-12:00 / 14:00-18:00 (i.e. Mon–Fri 01:00-04:00 / 06:00-10:00 UTC); **weekends are always OFF-PEAK** (previously weekends inside those windows were wrongly shown as PEAK).
 - Refactored the check into the pure `isDsApiPeak(date)` helper (weekday resolved on the Beijing calendar, so it is correct in any timezone) and exposed it via the test-only `__test` export.
 - Added 3 unit-test groups covering window edges, weekends and the Beijing/UTC day boundary (9 tests total, all green).
 - Docs synced (this README, `README-CN.md` and the `Tuning` section).
+
+## Upgrading from an older DSH
+
+After DSH moved to declaration-gated slots (`0.1.2-rc.1`), an install of this
+plugin made *before* that change fails at startup with:
+
+```
+Failed to load plugins
+dsh-stats-hud
+failed to apply loader entry … (dsh-stats-hud): slot "conversation.composer.dock" is not declared (a parent entry's children table must declare it)
+```
+
+Update the plugin to the fixed version (the 2026-09-08 Changelog entry above),
+then **restart `dsh web`** — loader entries are scanned at boot:
+
+- **Installed from a local checkout** (`link:` dependency): update the
+  checkout (`git pull`, or copy the new files over) and simply restart. No
+  reinstall needed — the profile points straight at the checkout, so the new
+  `lib/client.js` is served as-is.
+- **Installed from GitHub or npm**: re-resolve the latest version with
+  `dsh plugin --profile web update dsh-stats-hud`, or `remove` and `add` the
+  package again, then restart.
+
+Quick sanity check that the fixed version is in place: the client code must
+contain the new registration pattern `ctx.slots.inject("conversation.composer.dock", …)` (see `lib/client.js`).
+
+If the alert still shows after the restart, hard-refresh the browser page
+(`Cmd+Shift+R`) — the plugin's browser bundle is cached per page load.
 
 ## Instruments (all-English, LLM terminology)
 
@@ -55,7 +92,7 @@ The `mini` tier in a narrow window:
 
 ## Requirements
 
-- DeepSeek Harness `dsh` (tested on 0.1.0-rc.6, macOS)
+- DeepSeek Harness `dsh` (tested on 0.1.0-rc.6 → 0.1.2-rc.1, macOS; since `0.1.2-rc.1` slot registration is declaration-gated and requires the `ctx.slots.inject` pattern — see Changelog)
 - pnpm (for plugin management)
 
 ## Install
@@ -82,7 +119,7 @@ dsh plugin --profile web remove dsh-stats-hud
 
 ## How it works
 
-- Registers into the `conversation.composer.dock` slot (id `dsh-stats-hud`, order 1) — **only to receive the session-scoped hooks** (`useSession`/`useProjection`); the panel itself is `position: fixed`, takes no layout space, and the stock stats line stays untouched.
+- Registers into the `conversation.composer.dock` slot (id `dsh-stats-hud`, order 1) — **only to receive the session-scoped hooks** (`useSession`/`useProjection`); the panel itself is `position: fixed`, takes no layout space, and the stock stats line stays untouched. Registration goes through `ctx.slots.inject(...)`, which waits for the slot to be declared by its parent entry (required since DSH made slot registration declaration-gated).
 - Data comes from the same projections the stock UI uses: `useProjection("sessionStats")`, `useProjection("tokenUsage")`, `useProjection("contextPressure")` and `useProjection("contextBreakdown")` — zero host-side changes.
 - `exports.inject = ["slots"]` is mandatory: DSH's ctx is a strict proxy, and accessing an undeclared service throws (`cannot get property "locale" without inject`).
 - The panel is `pointer-events: none` (click-through); only the CONTEXT USAGE bar re-enables pointer events so its hover tooltip works.
