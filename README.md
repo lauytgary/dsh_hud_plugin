@@ -14,6 +14,12 @@ A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
 
 ## Changelog
 
+**2026-09-11 — Verified against DSH 0.1.5-rc.1 (no code changes needed)**
+
+- Re-audited every interface the HUD touches against `dsh 0.1.5-rc.1` (client packages `0.1.5-rc.2`): `conversation.composer.dock` is still declared by the composer bar and still renders declaration-gated, so the `ctx.slots.inject(...)` registration stays as-is; the dock's `id`/`order`/`label` options, the `useSession` / `useProjection` standard props (plus two new ones, `useResource` / `usePanelInfo`), all four projections (`sessionStats`, `tokenUsage`, `contextPressure`, `contextBreakdown`) and the `[data-composer-card]` / `data-slot` DOM markers are unchanged.
+- Manifest contract unchanged (`dsh.bundle.patch`, `dsh.client.platform`, `window.__ModuleLoader__.load({id, factory})`); `dsh plugin` is still a pnpm forwarder. Removed a dead `dsh.client.inject` entry: `@deepseek-ai/dsh-client-runtime` no longer exists in the tree (unknown names are ignored harmlessly). Package version bumped to `0.1.1`.
+- Docs: the Install section now distinguishes the two reload paths — client-half edits in a `link:` checkout are **hot-reloaded** by the default `@deepseek-ai/dsh-client-hmr`, while `add` / `remove` / `update` still need a `dsh web` restart.
+
 **2026-09-08 — DSH 0.1.2-rc.1 compatibility (slot registration became declaration-gated)**
 
 - DSH `0.1.2-rc.1` reworked the web client's slot system: `slots.register()` is now a pure *attachment* API and throws unless the target slot has already been **declared by a parent entry's children table**. The composer subtree — including `conversation.composer.dock` — is declared lazily by the conversation UI tree, i.e. *after* plugin loader entries have applied, so the old direct `ctx.slots.register(...)` call in `apply()` failed with `slot "conversation.composer.dock" is not declared (a parent entry's children table must declare it)` and DSH showed **Failed to load plugins** at startup.
@@ -39,16 +45,17 @@ dsh-stats-hud
 failed to apply loader entry … (dsh-stats-hud): slot "conversation.composer.dock" is not declared (a parent entry's children table must declare it)
 ```
 
-Update the plugin to the fixed version (the 2026-09-08 Changelog entry above),
-then **restart `dsh web`** — loader entries are scanned at boot:
+Update the plugin to the fixed version (the 2026-09-08 Changelog entry above), then reload it:
 
 - **Installed from a local checkout** (`link:` dependency): update the
-  checkout (`git pull`, or copy the new files over) and simply restart. No
-  reinstall needed — the profile points straight at the checkout, so the new
-  `lib/client.js` is served as-is.
+  checkout (`git pull`, or copy the new files over). The client half is
+  hot-reloaded by `@deepseek-ai/dsh-client-hmr` into the running page; restart
+  `dsh web` only if the plugin's host half or its `cordis.patch.yml` patch
+  changed.
 - **Installed from GitHub or npm**: re-resolve the latest version with
   `dsh plugin --profile web update dsh-stats-hud`, or `remove` and `add` the
-  package again, then restart.
+  package again, then **restart `dsh web`** — a newly resolved install path is
+  scanned at boot.
 
 Quick sanity check that the fixed version is in place: the client code must
 contain the new registration pattern `ctx.slots.inject("conversation.composer.dock", …)` (see `lib/client.js`).
@@ -92,7 +99,7 @@ The `mini` tier in a narrow window:
 
 ## Requirements
 
-- DeepSeek Harness `dsh` (tested on 0.1.0-rc.6 → 0.1.2-rc.1, macOS; since `0.1.2-rc.1` slot registration is declaration-gated and requires the `ctx.slots.inject` pattern — see Changelog)
+- DeepSeek Harness `dsh` (tested on 0.1.0-rc.6 → 0.1.5-rc.1, macOS; since `0.1.2-rc.1` slot registration is declaration-gated and requires the `ctx.slots.inject` pattern — see Changelog)
 - pnpm (for plugin management)
 
 ## Install
@@ -105,7 +112,7 @@ dsh plugin --profile web add /path/to/dsh-stats-hud
 dsh plugin --profile web add https://github.com/lauytgary/dsh_hud_plugin
 ```
 
-Then **restart `dsh web`** (loader entries are scanned at boot) and refresh the page. The package is installed as a `link:` dependency — after editing `lib/client.js` locally, only a restart is needed, no reinstall.
+Then **restart `dsh web`** (loader entries are scanned at boot) and refresh the page. The package is installed as a `link:` dependency, so local edits never need a reinstall — and the web profile mounts `@deepseek-ai/dsh-client-hmr` by default, which stat-polls the client bundle and re-applies the plugin: **after editing `lib/client.js`, the HUD hot-reloads into the running page** (no restart, no manual refresh). A restart is only needed when the plugin is added, removed or updated — i.e. when the loader entries themselves change.
 
 The plugin then shows up in **Settings → Plugins**:
 

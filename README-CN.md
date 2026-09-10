@@ -14,6 +14,12 @@
 
 ## 更新记录
 
+**2026-09-11 — 已对 DSH 0.1.5-rc.1 验证（无需改动代码）**
+
+- 重新逐项核对 HUD 依赖的所有接口（对象为 `dsh 0.1.5-rc.1`，客户端套件 `0.1.5-rc.2`）：`conversation.composer.dock` 仍由 composer bar 宣告、仍受「先宣告、后挂载」约束，因此 `ctx.slots.inject(...)` 注册方式保持不变；dock 的 `id` / `order` / `label` 参数、`useSession` / `useProjection` 标准 props（另新增 `useResource` / `usePanelInfo`）、四个投影（`sessionStats`、`tokenUsage`、`contextPressure`、`contextBreakdown`）以及 `[data-composer-card]` / `data-slot` DOM 标记均未变化。
+- manifest 契约未变（`dsh.bundle.patch`、`dsh.client.platform`、`window.__ModuleLoader__.load({id, factory})`）；`dsh plugin` 仍是 pnpm 前导命令。移除了一条失效的 `dsh.client.inject` 项：`@deepseek-ai/dsh-client-runtime` 在新版整棵树中已不存在（未知名称为安全忽略）。包版本升到 `0.1.1`。
+- 文档：「安装」一节现在区分两条重载路径——`link:` 仓库下修改客户端代码会由默认挂载的 `@deepseek-ai/dsh-client-hmr` **热重载**；而 `add` / `remove` / `update` 仍需重启 `dsh web`。
+
 **2026-09-08 — 兼容 DSH 0.1.2-rc.1（插槽注册改为「先宣告、后挂载」）**
 
 - DSH `0.1.2-rc.1` 重构了 Web 客户端的插槽体系：`slots.register()` 现在只是纯粹的「挂载」API，若目标插槽尚未由**父条目的 children table 宣告**，会直接抛错。composer 子树（包括 `conversation.composer.dock`）是由会话 UI 树**惰性宣告**的——时机在 plugin（loader 条目）apply 之后，因此原先在 `apply()` 中直接调用 `ctx.slots.register(...)` 会失败，报 `slot "conversation.composer.dock" is not declared (a parent entry's children table must declare it)`，DSH 启动时提示 **Failed to load plugins**。
@@ -39,14 +45,15 @@ dsh-stats-hud
 failed to apply loader entry … (dsh-stats-hud): slot "conversation.composer.dock" is not declared (a parent entry's children table must declare it)
 ```
 
-把插件更新到修复版（见上方 2026-09-08 的更新记录），然后**重启 `dsh web`**
-（loader 条目在启动时扫描）：
+把插件更新到修复版（见上方 2026-09-08 的更新记录），然后重新加载：
 
 - **从本地仓库安装**（`link:` 依赖）：更新仓库内容（`git pull`，或把新文件拷
-  过去）后直接重启即可，无需重新安装——profile 直接指向该仓库，新的
-  `lib/client.js` 会原样被加载。
+  过去）。客户端部分会由 `@deepseek-ai/dsh-client-hmr` 热重载进正在运行的页
+  面；仅当插件的宿主部分或其 `cordis.patch.yml` 补丁有变化时，才需要重启
+  `dsh web`。
 - **从 GitHub 或 npm 安装**：用 `dsh plugin --profile web update dsh-stats-hud`
-  重新解析最新版本，或先 `remove` 再重新 `add` 该包，然后重启。
+  重新解析最新版本，或先 `remove` 再重新 `add` 该包，然后**重启 `dsh web`**——
+  新解析出的安装路径会在启动时扫描。
 
 快速确认是否已更新到修复版：插件客户端代码应包含新的注册写法
 `ctx.slots.inject("conversation.composer.dock", …)`（见 `lib/client.js`）。
@@ -90,7 +97,7 @@ HUD 会根据聊天栏右侧的可用空间自适应（通过 ResizeObserver 实
 
 ## 环境要求
 
-- DeepSeek Harness `dsh`（已在 0.1.0-rc.6 → 0.1.2-rc.1、macOS 上测试；自 `0.1.2-rc.1` 起插槽注册改为「先宣告、后挂载」，需使用 `ctx.slots.inject` 模式——见更新记录）
+- DeepSeek Harness `dsh`（已在 0.1.0-rc.6 → 0.1.5-rc.1、macOS 上测试；自 `0.1.2-rc.1` 起插槽注册改为「先宣告、后挂载」，需使用 `ctx.slots.inject` 模式——见更新记录）
 - pnpm（用于插件管理）
 
 ## 安装
@@ -103,7 +110,7 @@ dsh plugin --profile web add /path/to/dsh-stats-hud
 dsh plugin --profile web add https://github.com/lauytgary/dsh_hud_plugin
 ```
 
-然后**重启 `dsh web`**（加载器条目在启动时扫描）并刷新页面。该插件以 `link:` 依赖方式安装——在本地修改 `lib/client.js` 后只需重启，无需重新安装。
+然后**重启 `dsh web`**（加载器条目在启动时扫描）并刷新页面。该插件以 `link:` 依赖方式安装，本地修改永远无需重新安装——而且 Web profile 默认挂载 `@deepseek-ai/dsh-client-hmr`，它会轮询客户端 bundle 并重新应用插件：**修改 `lib/client.js` 后，HUD 会热重载进正在运行的页面**（无需重启，也无需手动刷新）。只有新增、移除或更新插件——即 loader 条目本身发生变化——时才需要重启。
 
 安装后可在**设置 → Plugins（插件列表）**中看到它：
 
