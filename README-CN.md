@@ -10,6 +10,8 @@
 
 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 打造的科幻风格 HUD：把会话的实时统计数据变成游戏风格的经验条，以**固定在 Web 界面最右侧边缘的垂直竖栏**形式呈现——完全不改动原有的统计行。
 
+> **安装：** 在 DeepSeek Harness Desktop 应用中打开 **插件 → 添加插件**，粘贴 `https://github.com/lauytgary/dsh_hud_plugin`，点 **安装**，再点 **立即启用**。[完整步骤 ↓](#安装)
+
 ![截图](docs/screenshot.png)
 
 ## 更新记录
@@ -21,7 +23,7 @@
 - 格式化函数与 0.2.1 原生 helper 重新对齐：`tok/s` 从 10 起取整（原为 100）；缓存命中率在接近满命中时保留一位小数，不再四舍五入成 `100%`。
 - 补上缺失的 `.gsh-sub` 规则，THROUGHPUT 的单位（`tok/s`）终于有自己的小号弱化样式。
 - manifest：移除未使用的 `dsh.client.inject` 项（`@deepseek-ai/dsh-client-locale`、`@deepseek-ai/dsh-client-ui-conversation`——0.2.1 只把 `inject` 当作加载顺序提示，而本 bundle 只 require `react`）与 `react` peer 依赖（`require("react")` 由客户端平台的 seed 提供，保留 peer 只会让 pnpm 往 profile 里多装一份 `react@18`）；声明 `dsh.manifestVersion: 1`。包版本升到 `0.1.2`。
-- 文档：「安装」一节补记——从**设置 → Plugins**安装会对运行中的应用即时生效、无需重启；升级说明里的「重启 `dsh web`」改为「重启宿主」。
+- 文档：安装一节改为 Desktop 优先的分步指引（**插件 → 添加插件 → 安装第三方插件 → 立即启用**），保留 CLI 方式，并加上「确认装好了」与故障排查表；两张插件列表截图换成 0.2.1 的插件页实拍。
 
 **2026-09-11 — 已对 DSH 0.1.5-rc.1 验证（无需改动代码）**
 
@@ -111,21 +113,50 @@ HUD 会根据聊天栏右侧的可用空间自适应（通过 ResizeObserver 实
 
 ## 安装
 
-```sh
-# 从本地仓库安装（Desktop 应用用 `desktop`，`dsh web` 用 `web`）
-dsh plugin --profile <profile> add /path/to/dsh-stats-hud
+### Desktop 应用（推荐）
 
-# 或直接从 GitHub 安装
+1. 打开侧边栏的 **插件（Plugins）** 页，点 **添加插件（Add plugin）**。
+2. 选 **安装第三方插件（Install a third-party plugin）**，粘贴下面任意一种：
+
+   | 形式 | 示例 |
+   | --- | --- |
+   | Git 地址 | `https://github.com/lauytgary/dsh_hud_plugin` |
+   | 本地仓库 | `/absolute/path/to/dsh-stats-hud` |
+   | npm 包名 | `dsh-stats-hud`（尚未发布） |
+
+3. 点 **安装（Install）**，等 pnpm 跑完，再点 **立即启用（Enable now）**。
+4. HUD 会立刻出现在对话最右侧——无需重启，也无需刷新页面。
+
+**插件 → 已安装** 里的卡片会显示它的来源 spec；用本地仓库（`link:`）最方便跟进更新：`git pull` 之后客户端部分会自动热重载。
+
+### 命令行
+
+```sh
 dsh plugin --profile <profile> add https://github.com/lauytgary/dsh_hud_plugin
 ```
 
-然后**重启宿主**——Desktop 应用或 `dsh web`——让加载器在启动时组合新条目（`dsh web` 重启后还需刷新页面）。若从**设置 → Plugins**安装，则走同一个 plugin manager、对运行中的应用**即时生效，无需重启**。该插件以 `link:` 依赖方式安装，本地修改永远无需重新安装；两个 profile 默认挂载的 `@deepseek-ai/dsh-client-hmr` 会轮询套件的 client 入口文件并重新应用插件，因此**修改 `lib/client.js` 后，HUD 会热重载进正在运行的页面**（无需重启，也无需手动刷新）。只有通过 CLI 新增、移除或更新插件——即 loader 条目本身发生变化——时才需要重启。
+Desktop 应用用 `--profile desktop`，`dsh web` 用 `web`。该命令会写入依赖**并**选中 bundle，但运行中的宿主只在启动时组合：装完**重启宿主**（`dsh web` 重启后还需刷新页面）。本地路径会以 `link:` 依赖安装，修改 `lib/client.js` 无需重装——`@deepseek-ai/dsh-client-hmr` 会把插件重新应用进正在运行的页面。
 
-安装后可在**设置 → Plugins（插件列表）**中看到它：
+### 确认装好了
 
-![插件列表中的 dsh-stats-hud](docs/plugin_chi.png)
+- **插件 → 已安装** 中 `dsh-stats-hud` 的开关为开启：
+
+  ![插件页中已安装并启用的 dsh-stats-hud](docs/plugin_chi.png)
+
+- 会话记录过至少一步之后，HUD 竖栏出现在窗口最右侧。
+
+## 故障排查
+
+| 现象 | 处理 |
+| --- | --- |
+| 完全看不到 HUD | 会话还没有 steps/tokens，或窗口宽度小于 800px 时它本来就会隐藏 |
+| 装了但没显示 | 到 **插件 → 已安装** 把开关打开 |
+| 卡片显示错误 | pnpm 取不到 spec（GitHub 连不上、本地路径已移动）——打开卡片重装 |
+| 用 CLI 装的 | 重启宿主：CLI 无法重组正在运行的 app |
 
 ## 卸载
+
+在 **插件 → 已安装** 的卡片上卸载，或：
 
 ```sh
 dsh plugin --profile <profile> remove dsh-stats-hud

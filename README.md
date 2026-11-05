@@ -10,6 +10,8 @@
 
 A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): the session's stats become game-style level bars in a **vertical column fixed to the far right edge** of the web UI — without touching the original stats line.
 
+> **Install:** in the DeepSeek Harness Desktop app open **Plugins → Add plugin**, paste `https://github.com/lauytgary/dsh_hud_plugin`, press **Install**, then **Enable now**. [Full instructions ↓](#install)
+
 ![screenshot](docs/screenshot.png)
 
 ## Changelog
@@ -21,7 +23,7 @@ A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
 - Formatters re-synced with the 0.2.1 stock helpers: `tok/s` rounds to an integer from 10 up (was 100), and the cache-hit percentage keeps one decimal for a near-full hit instead of rounding up to `100%`.
 - Added the missing `.gsh-sub` rule, so the THROUGHPUT unit (`tok/s`) finally has its own small muted style.
 - Manifest: dropped the unused `dsh.client.inject` entries (`@deepseek-ai/dsh-client-locale`, `@deepseek-ai/dsh-client-ui-conversation` — 0.2.1 uses `inject` only as a load-order hint, and this bundle requires nothing but `react`) and the `react` peer dependency (`require("react")` resolves through the client platform seed, so the peer only made pnpm install a stray `react@18` into the profile); declared `dsh.manifestVersion: 1`. Package version bumped to `0.1.2`.
-- Docs: the Install section now records that installing from **Settings → Plugins** applies to the running app without a restart, and the upgrader notes say “restart the host” instead of only `dsh web`.
+- Docs: the Install section is now a Desktop-first walkthrough (**Plugins → Add plugin → Install a third-party plugin → Enable now**) with a CLI fallback, a “Check that it works” step and a troubleshooting table; both plugin-list screenshots were replaced with 0.2.1 captures of the Plugins page.
 
 **2026-09-11 — Verified against DSH 0.1.5-rc.1 (no code changes needed)**
 
@@ -113,21 +115,50 @@ The `mini` tier in a narrow window:
 
 ## Install
 
-```sh
-# from a local checkout (`--profile desktop` for the Desktop app, `web` for `dsh web`)
-dsh plugin --profile <profile> add /path/to/dsh-stats-hud
+### Desktop app (recommended)
 
-# or straight from GitHub
+1. Open the **Plugins** page in the sidebar and press **Add plugin**.
+2. Pick **Install a third-party plugin** and paste one of these:
+
+   | Spec | Example |
+   | --- | --- |
+   | Git address | `https://github.com/lauytgary/dsh_hud_plugin` |
+   | Local checkout | `/absolute/path/to/dsh-stats-hud` |
+   | npm package | `dsh-stats-hud` (not published yet) |
+
+3. Press **Install**, let pnpm finish, then press **Enable now**.
+4. The HUD appears at the far right of the conversation right away — no restart, no page refresh.
+
+The card under **Plugins → Installed** always shows the spec it was installed from, so a local checkout (`link:`) is the easiest way to keep up: `git pull` and the client half hot-reloads.
+
+### Command line
+
+```sh
 dsh plugin --profile <profile> add https://github.com/lauytgary/dsh_hud_plugin
 ```
 
-Then **restart the host** — the Desktop app, or `dsh web` — so the loader composes the new entries at boot (plus a page refresh after a `dsh web` restart). Installing from **Settings → Plugins** goes through the same plugin manager against the running app and applies the change **without a restart**. The package is installed as a `link:` dependency, so local edits never need a reinstall; `@deepseek-ai/dsh-client-hmr`, which both profiles mount by default, stat-polls the package's client entry file and re-applies the plugin, so **after editing `lib/client.js` the HUD hot-reloads into the running page** (no restart, no manual refresh). A restart is only needed after the CLI adds, removes or updates a plugin — i.e. when the loader entries themselves change.
+Use `--profile desktop` for the Desktop app and `web` for a `dsh web` profile. The command installs the dependency **and** selects the bundle, but a running host only composes it at boot: **restart the host** afterwards (refresh the page after a `dsh web` restart). A local path installs as a `link:` dependency, so editing `lib/client.js` never needs a reinstall — `@deepseek-ai/dsh-client-hmr` re-applies the plugin in the running page.
 
-The plugin then shows up in **Settings → Plugins**:
+### Check that it works
 
-![dsh-stats-hud in the plugin list](docs/plugin_eng.png)
+- **Plugins → Installed** lists `dsh-stats-hud` with its switch on:
+
+  ![dsh-stats-hud installed and enabled on the Plugins page](docs/plugin_eng.png)
+
+- The HUD column sits at the far right edge of the window once the session has recorded a step.
+
+## Troubleshooting
+
+| Symptom | Fix |
+| --- | --- |
+| No HUD at all | It hides while the session has no steps/tokens, and whenever the window is narrower than 800px |
+| Installed but nothing shows | Turn its switch on under **Plugins → Installed** |
+| The card shows an error | pnpm could not fetch the spec (GitHub unreachable, local path moved) — open the card and reinstall |
+| Installed from the CLI | Restart the host: the CLI cannot recompose a running app |
 
 ## Uninstall
+
+Open the card under **Plugins → Installed** and uninstall it there, or:
 
 ```sh
 dsh plugin --profile <profile> remove dsh-stats-hud
