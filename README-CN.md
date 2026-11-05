@@ -14,6 +14,14 @@
 
 ## 更新记录
 
+**2026-11-05 — 已适配 DSH 0.2.1-rc.5（当前 Desktop 版本）**
+
+- 重新逐项核对 HUD 依赖的所有接口（对象为正在运行的 `dsh 0.2.1-rc.5`，即 Desktop 应用内置运行时）：`conversation.composer.dock` 仍由 composer bar 宣告、仍受「先宣告、后挂载」约束，因此 `ctx.slots.inject(...)` 注册方式保持不变；dock 的 `id` / `order` / `label` 参数、`useSession` / `useProjection` 标准 props、四个投影（`sessionStats`、`tokenUsage`、`contextPressure`、`contextBreakdown`）及其字段名、`[data-composer-card]` / `data-slot` DOM 标记、`style[data-plugin]` 样式归属约定与 `window.__ModuleLoader__.load({ id, factory })` 均未变化。
+- 原生统计行现在拆成**两个** dock 条目（`activity`，order 0；`usage`，order 1），不再是单个 `stats` 条目。HUD 保留自己的 id（`dsh-stats-hud`，order 1），只作为新增条目并列显示，不会替换任何一个。
+- 格式化函数与 0.2.1 原生 helper 重新对齐：`tok/s` 从 10 起取整（原为 100）；缓存命中率在接近满命中时保留一位小数，不再四舍五入成 `100%`。
+- 补上缺失的 `.gsh-sub` 规则，THROUGHPUT 的单位（`tok/s`）终于有自己的小号弱化样式。
+- manifest：移除未使用的 `dsh.client.inject` 项（`@deepseek-ai/dsh-client-locale`、`@deepseek-ai/dsh-client-ui-conversation`——0.2.1 只把 `inject` 当作加载顺序提示，而本 bundle 只 require `react`）与 `react` peer 依赖（`require("react")` 由客户端平台的 seed 提供，保留 peer 只会让 pnpm 往 profile 里多装一份 `react@18`）；声明 `dsh.manifestVersion: 1`。包版本升到 `0.1.2`。
+
 **2026-09-11 — 已对 DSH 0.1.5-rc.1 验证（无需改动代码）**
 
 - 重新逐项核对 HUD 依赖的所有接口（对象为 `dsh 0.1.5-rc.1`，客户端套件 `0.1.5-rc.2`）：`conversation.composer.dock` 仍由 composer bar 宣告、仍受「先宣告、后挂载」约束，因此 `ctx.slots.inject(...)` 注册方式保持不变；dock 的 `id` / `order` / `label` 参数、`useSession` / `useProjection` 标准 props（另新增 `useResource` / `usePanelInfo`）、四个投影（`sessionStats`、`tokenUsage`、`contextPressure`、`contextBreakdown`）以及 `[data-composer-card]` / `data-slot` DOM 标记均未变化。
@@ -51,7 +59,7 @@ failed to apply loader entry … (dsh-stats-hud): slot "conversation.composer.do
   过去）。客户端部分会由 `@deepseek-ai/dsh-client-hmr` 热重载进正在运行的页
   面；仅当插件的宿主部分或其 `cordis.patch.yml` 补丁有变化时，才需要重启
   `dsh web`。
-- **从 GitHub 或 npm 安装**：用 `dsh plugin --profile web update dsh-stats-hud`
+- **从 GitHub 或 npm 安装**：用 `dsh plugin --profile <profile> update dsh-stats-hud`
   重新解析最新版本，或先 `remove` 再重新 `add` 该包，然后**重启 `dsh web`**——
   新解析出的安装路径会在启动时扫描。
 
@@ -97,20 +105,20 @@ HUD 会根据聊天栏右侧的可用空间自适应（通过 ResizeObserver 实
 
 ## 环境要求
 
-- DeepSeek Harness `dsh`（已在 0.1.0-rc.6 → 0.1.5-rc.1、macOS 上测试；自 `0.1.2-rc.1` 起插槽注册改为「先宣告、后挂载」，需使用 `ctx.slots.inject` 模式——见更新记录）
+- DeepSeek Harness `dsh` **0.2.1-rc.5**（macOS；Desktop 应用内置运行时）。插槽注册为「先宣告、后挂载」，因此插件通过 `ctx.slots.inject(...)` 模式注册——见更新记录
 - pnpm（用于插件管理）
 
 ## 安装
 
 ```sh
-# 从本地仓库安装
-dsh plugin --profile web add /path/to/dsh-stats-hud
+# 从本地仓库安装（Desktop 应用用 `desktop`，`dsh web` 用 `web`）
+dsh plugin --profile <profile> add /path/to/dsh-stats-hud
 
 # 或直接从 GitHub 安装
-dsh plugin --profile web add https://github.com/lauytgary/dsh_hud_plugin
+dsh plugin --profile <profile> add https://github.com/lauytgary/dsh_hud_plugin
 ```
 
-然后**重启 `dsh web`**（加载器条目在启动时扫描）并刷新页面。该插件以 `link:` 依赖方式安装，本地修改永远无需重新安装——而且 Web profile 默认挂载 `@deepseek-ai/dsh-client-hmr`，它会轮询客户端 bundle 并重新应用插件：**修改 `lib/client.js` 后，HUD 会热重载进正在运行的页面**（无需重启，也无需手动刷新）。只有新增、移除或更新插件——即 loader 条目本身发生变化——时才需要重启。
+然后**重启宿主**——Desktop 应用或 `dsh web`——因为加载器条目在启动时扫描（`dsh web` 重启后还需刷新页面）。该插件以 `link:` 依赖方式安装，本地修改永远无需重新安装；挂载了 `@deepseek-ai/dsh-client-hmr` 的 profile 还会轮询客户端 bundle 并重新应用插件，因此**修改 `lib/client.js` 后，HUD 会热重载进正在运行的页面**（无需重启，也无需手动刷新）。只有新增、移除或更新插件——即 loader 条目本身发生变化——时才需要重启。
 
 安装后可在**设置 → Plugins（插件列表）**中看到它：
 
@@ -119,14 +127,14 @@ dsh plugin --profile web add https://github.com/lauytgary/dsh_hud_plugin
 ## 卸载
 
 ```sh
-dsh plugin --profile web remove dsh-stats-hud
+dsh plugin --profile <profile> remove dsh-stats-hud
 ```
 
 ## 工作原理
 
 - 注册到 `conversation.composer.dock` 插槽（id `dsh-stats-hud`，顺序 1）——**只是为了拿到会话作用域的 hooks**（`useSession` / `useProjection`）；面板本身是 `position: fixed`，不占用布局空间，原有统计行保持不变。注册通过 `ctx.slots.inject(...)` 进行——新版 DSH 要求插槽先由其父条目声明，`inject` 会等待该声明就绪后再注册。
 - 数据来自与原生界面相同的投影：`useProjection("sessionStats")`、`useProjection("tokenUsage")`、`useProjection("contextPressure")` 和 `useProjection("contextBreakdown")`——宿主端零改动。
-- `exports.inject = ["slots"]` 是必需的：DSH 的 ctx 是严格代理，访问未声明的服务会抛错（`cannot get property "locale" without inject`）。
+- `exports.inject = ["slots"]` 是必需的：DSH 的 ctx 是严格代理，读取未在其中声明的服务会抛错（`service "slots" is not declared by your plugin`）。包级 `dsh.client` 声明无需 `inject` 列表——本 bundle 只 require `react`。
 - 面板是 `pointer-events: none`（点击穿透）；只有 CONTEXT USAGE 条重新启用了指针事件，以便悬停提示生效。
 
 ## 文件结构
@@ -151,7 +159,7 @@ npm test   # 纯函数单元测试（node:test，零依赖；需要 Node ≥ 18�
 ```
 
 测试会用 Node VM 加载 `lib/client.js`（stub 掉 loader，无需 DOM），覆盖纯函数：
-`formatTokens` / `formatDuration` / `formatTps` / `tierOf` / `billedInputTokens` / `cacheHitPercent`。
+`formatTokens` / `formatDuration` / `formatTps` / `tierOf` / `billedInputTokens` / `cacheHitPercent` / `isDsApiPeak`。
 test-only 的 `__test` 导出由 `DSH_HUD_TEST` 环境变量门控，浏览器端不会触发，bundle 不受影响。
 
 ## 参数调优
@@ -173,7 +181,7 @@ test-only 的 `__test` 导出由 `DSH_HUD_TEST` 环境变量门控，浏览器�
 # 先移除 package.json 中的 "private": true，然后
 npm publish
 # 用户安装方式：
-dsh plugin --profile web add dsh-stats-hud
+dsh plugin --profile <profile> add dsh-stats-hud
 ```
 
 ## 联系

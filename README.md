@@ -14,6 +14,14 @@ A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
 
 ## Changelog
 
+**2026-11-05 — Adapted to DSH 0.2.1-rc.5 (the current Desktop release)**
+
+- Re-audited every interface the HUD touches against the running `dsh 0.2.1-rc.5` (the Desktop app's bundled runtime): `conversation.composer.dock` is still declared by the composer bar and still declaration-gated, so the `ctx.slots.inject(...)` registration stays as-is; the dock's `id` / `order` / `label` options, the `useSession` / `useProjection` standard props, all four projections (`sessionStats`, `tokenUsage`, `contextPressure`, `contextBreakdown`) with unchanged field names, the `[data-composer-card]` / `data-slot` DOM markers, the `style[data-plugin]` style-ownership convention and `window.__ModuleLoader__.load({ id, factory })` are unchanged.
+- The stock stats line is now **two** dock entries (`activity`, order 0, and `usage`, order 1) instead of one `stats` entry. The HUD keeps its own id (`dsh-stats-hud`, order 1), so it is added beside them and never replaces one.
+- Formatters re-synced with the 0.2.1 stock helpers: `tok/s` rounds to an integer from 10 up (was 100), and the cache-hit percentage keeps one decimal for a near-full hit instead of rounding up to `100%`.
+- Added the missing `.gsh-sub` rule, so the THROUGHPUT unit (`tok/s`) finally has its own small muted style.
+- Manifest: dropped the unused `dsh.client.inject` entries (`@deepseek-ai/dsh-client-locale`, `@deepseek-ai/dsh-client-ui-conversation` — 0.2.1 uses `inject` only as a load-order hint, and this bundle requires nothing but `react`) and the `react` peer dependency (`require("react")` resolves through the client platform seed, so the peer only made pnpm install a stray `react@18` into the profile); declared `dsh.manifestVersion: 1`. Package version bumped to `0.1.2`.
+
 **2026-09-11 — Verified against DSH 0.1.5-rc.1 (no code changes needed)**
 
 - Re-audited every interface the HUD touches against `dsh 0.1.5-rc.1` (client packages `0.1.5-rc.2`): `conversation.composer.dock` is still declared by the composer bar and still renders declaration-gated, so the `ctx.slots.inject(...)` registration stays as-is; the dock's `id`/`order`/`label` options, the `useSession` / `useProjection` standard props (plus two new ones, `useResource` / `usePanelInfo`), all four projections (`sessionStats`, `tokenUsage`, `contextPressure`, `contextBreakdown`) and the `[data-composer-card]` / `data-slot` DOM markers are unchanged.
@@ -53,7 +61,7 @@ Update the plugin to the fixed version (the 2026-09-08 Changelog entry above), t
   `dsh web` only if the plugin's host half or its `cordis.patch.yml` patch
   changed.
 - **Installed from GitHub or npm**: re-resolve the latest version with
-  `dsh plugin --profile web update dsh-stats-hud`, or `remove` and `add` the
+  `dsh plugin --profile <profile> update dsh-stats-hud`, or `remove` and `add` the
   package again, then **restart `dsh web`** — a newly resolved install path is
   scanned at boot.
 
@@ -99,20 +107,20 @@ The `mini` tier in a narrow window:
 
 ## Requirements
 
-- DeepSeek Harness `dsh` (tested on 0.1.0-rc.6 → 0.1.5-rc.1, macOS; since `0.1.2-rc.1` slot registration is declaration-gated and requires the `ctx.slots.inject` pattern — see Changelog)
+- DeepSeek Harness `dsh` **0.2.1-rc.5** (macOS; the Desktop app's bundled runtime). Slot registration is declaration-gated, so the plugin registers through the `ctx.slots.inject(...)` pattern — see Changelog
 - pnpm (for plugin management)
 
 ## Install
 
 ```sh
-# from a local checkout
-dsh plugin --profile web add /path/to/dsh-stats-hud
+# from a local checkout (`--profile desktop` for the Desktop app, `web` for `dsh web`)
+dsh plugin --profile <profile> add /path/to/dsh-stats-hud
 
 # or straight from GitHub
-dsh plugin --profile web add https://github.com/lauytgary/dsh_hud_plugin
+dsh plugin --profile <profile> add https://github.com/lauytgary/dsh_hud_plugin
 ```
 
-Then **restart `dsh web`** (loader entries are scanned at boot) and refresh the page. The package is installed as a `link:` dependency, so local edits never need a reinstall — and the web profile mounts `@deepseek-ai/dsh-client-hmr` by default, which stat-polls the client bundle and re-applies the plugin: **after editing `lib/client.js`, the HUD hot-reloads into the running page** (no restart, no manual refresh). A restart is only needed when the plugin is added, removed or updated — i.e. when the loader entries themselves change.
+Then **restart the host** — the Desktop app, or `dsh web` — because loader entries are scanned at boot (refresh the page after a `dsh web` restart). The package is installed as a `link:` dependency, so local edits never need a reinstall; a profile that mounts `@deepseek-ai/dsh-client-hmr` additionally stat-polls the client bundle and re-applies the plugin, so **after editing `lib/client.js` the HUD hot-reloads into the running page** (no restart, no manual refresh). A restart is only needed when the plugin is added, removed or updated — i.e. when the loader entries themselves change.
 
 The plugin then shows up in **Settings → Plugins**:
 
@@ -121,14 +129,14 @@ The plugin then shows up in **Settings → Plugins**:
 ## Uninstall
 
 ```sh
-dsh plugin --profile web remove dsh-stats-hud
+dsh plugin --profile <profile> remove dsh-stats-hud
 ```
 
 ## How it works
 
 - Registers into the `conversation.composer.dock` slot (id `dsh-stats-hud`, order 1) — **only to receive the session-scoped hooks** (`useSession`/`useProjection`); the panel itself is `position: fixed`, takes no layout space, and the stock stats line stays untouched. Registration goes through `ctx.slots.inject(...)`, which waits for the slot to be declared by its parent entry (required since DSH made slot registration declaration-gated).
 - Data comes from the same projections the stock UI uses: `useProjection("sessionStats")`, `useProjection("tokenUsage")`, `useProjection("contextPressure")` and `useProjection("contextBreakdown")` — zero host-side changes.
-- `exports.inject = ["slots"]` is mandatory: DSH's ctx is a strict proxy, and accessing an undeclared service throws (`cannot get property "locale" without inject`).
+- `exports.inject = ["slots"]` is mandatory: DSH's ctx is a strict proxy, and reading any service not listed there throws (`service "slots" is not declared by your plugin`). The package-level `dsh.client` declaration needs no `inject` list — the bundle requires nothing but `react`.
 - The panel is `pointer-events: none` (click-through); only the CONTEXT USAGE bar re-enables pointer events so its hover tooltip works.
 
 ## Files
@@ -154,7 +162,7 @@ npm test   # pure-function unit tests (node:test, no dependencies; Node ≥ 18)
 
 The tests load `lib/client.js` in a Node VM with a stubbed loader (no DOM
 needed) and exercise the pure helpers — `formatTokens`, `formatDuration`,
-`formatTps`, `tierOf`, `billedInputTokens`, `cacheHitPercent`. The test-only
+`formatTps`, `tierOf`, `billedInputTokens`, `cacheHitPercent`, `isDsApiPeak`. The test-only
 `__test` export is gated behind the `DSH_HUD_TEST` env var, so the browser
 bundle is unaffected.
 
@@ -177,7 +185,7 @@ All constants live in `lib/client.js`:
 # remove "private": true from package.json, then
 npm publish
 # users install with:
-dsh plugin --profile web add dsh-stats-hud
+dsh plugin --profile <profile> add dsh-stats-hud
 ```
 
 ## Contact

@@ -56,9 +56,9 @@ test("formatDuration", () => {
 });
 
 test("formatTps", () => {
+	assert.equal(formatTps(9.4), "9.4");
 	assert.equal(formatTps(9.95), "10");
-	assert.equal(formatTps(99.94), "99.9");
-	assert.equal(formatTps(100), "100");
+	assert.equal(formatTps(99.94), "100"); // integer from 10 up, like the stock helper
 	assert.equal(formatTps(146.2), "146");
 });
 
@@ -78,6 +78,9 @@ test("cacheHitPercent", () => {
 	const usage = { uncachedInputTokens: 100, cacheReadTokens: 50, cacheWriteTokens: 50 };
 	assert.equal(cacheHitPercent(usage), 25);
 	assert.equal(cacheHitPercent({ uncachedInputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }), null);
+	// a near-full hit keeps a decimal instead of claiming a complete hit
+	assert.equal(cacheHitPercent({ uncachedInputTokens: 3, cacheReadTokens: 9997, cacheWriteTokens: 0 }), 99.9);
+	assert.equal(cacheHitPercent({ uncachedInputTokens: 0, cacheReadTokens: 500, cacheWriteTokens: 0 }), 100);
 });
 
 /**
