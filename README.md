@@ -21,6 +21,7 @@ A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
 - Formatters re-synced with the 0.2.1 stock helpers: `tok/s` rounds to an integer from 10 up (was 100), and the cache-hit percentage keeps one decimal for a near-full hit instead of rounding up to `100%`.
 - Added the missing `.gsh-sub` rule, so the THROUGHPUT unit (`tok/s`) finally has its own small muted style.
 - Manifest: dropped the unused `dsh.client.inject` entries (`@deepseek-ai/dsh-client-locale`, `@deepseek-ai/dsh-client-ui-conversation` — 0.2.1 uses `inject` only as a load-order hint, and this bundle requires nothing but `react`) and the `react` peer dependency (`require("react")` resolves through the client platform seed, so the peer only made pnpm install a stray `react@18` into the profile); declared `dsh.manifestVersion: 1`. Package version bumped to `0.1.2`.
+- Docs: the Install section now records that installing from **Settings → Plugins** applies to the running app without a restart, and the upgrader notes say “restart the host” instead of only `dsh web`.
 
 **2026-09-11 — Verified against DSH 0.1.5-rc.1 (no code changes needed)**
 
@@ -58,12 +59,12 @@ Update the plugin to the fixed version (the 2026-09-08 Changelog entry above), t
 - **Installed from a local checkout** (`link:` dependency): update the
   checkout (`git pull`, or copy the new files over). The client half is
   hot-reloaded by `@deepseek-ai/dsh-client-hmr` into the running page; restart
-  `dsh web` only if the plugin's host half or its `cordis.patch.yml` patch
-  changed.
+  the host (the Desktop app or `dsh web`) only if the plugin's host half or its
+  `cordis.patch.yml` patch changed.
 - **Installed from GitHub or npm**: re-resolve the latest version with
   `dsh plugin --profile <profile> update dsh-stats-hud`, or `remove` and `add` the
-  package again, then **restart `dsh web`** — a newly resolved install path is
-  scanned at boot.
+  package again, then **restart the host** — a newly resolved install path is
+  composed at boot.
 
 Quick sanity check that the fixed version is in place: the client code must
 contain the new registration pattern `ctx.slots.inject("conversation.composer.dock", …)` (see `lib/client.js`).
@@ -120,7 +121,7 @@ dsh plugin --profile <profile> add /path/to/dsh-stats-hud
 dsh plugin --profile <profile> add https://github.com/lauytgary/dsh_hud_plugin
 ```
 
-Then **restart the host** — the Desktop app, or `dsh web` — because loader entries are scanned at boot (refresh the page after a `dsh web` restart). The package is installed as a `link:` dependency, so local edits never need a reinstall; a profile that mounts `@deepseek-ai/dsh-client-hmr` additionally stat-polls the client bundle and re-applies the plugin, so **after editing `lib/client.js` the HUD hot-reloads into the running page** (no restart, no manual refresh). A restart is only needed when the plugin is added, removed or updated — i.e. when the loader entries themselves change.
+Then **restart the host** — the Desktop app, or `dsh web` — so the loader composes the new entries at boot (plus a page refresh after a `dsh web` restart). Installing from **Settings → Plugins** goes through the same plugin manager against the running app and applies the change **without a restart**. The package is installed as a `link:` dependency, so local edits never need a reinstall; `@deepseek-ai/dsh-client-hmr`, which both profiles mount by default, stat-polls the package's client entry file and re-applies the plugin, so **after editing `lib/client.js` the HUD hot-reloads into the running page** (no restart, no manual refresh). A restart is only needed after the CLI adds, removes or updates a plugin — i.e. when the loader entries themselves change.
 
 The plugin then shows up in **Settings → Plugins**:
 

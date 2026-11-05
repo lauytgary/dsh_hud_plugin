@@ -21,6 +21,7 @@
 - 格式化函数与 0.2.1 原生 helper 重新对齐：`tok/s` 从 10 起取整（原为 100）；缓存命中率在接近满命中时保留一位小数，不再四舍五入成 `100%`。
 - 补上缺失的 `.gsh-sub` 规则，THROUGHPUT 的单位（`tok/s`）终于有自己的小号弱化样式。
 - manifest：移除未使用的 `dsh.client.inject` 项（`@deepseek-ai/dsh-client-locale`、`@deepseek-ai/dsh-client-ui-conversation`——0.2.1 只把 `inject` 当作加载顺序提示，而本 bundle 只 require `react`）与 `react` peer 依赖（`require("react")` 由客户端平台的 seed 提供，保留 peer 只会让 pnpm 往 profile 里多装一份 `react@18`）；声明 `dsh.manifestVersion: 1`。包版本升到 `0.1.2`。
+- 文档：「安装」一节补记——从**设置 → Plugins**安装会对运行中的应用即时生效、无需重启；升级说明里的「重启 `dsh web`」改为「重启宿主」。
 
 **2026-09-11 — 已对 DSH 0.1.5-rc.1 验证（无需改动代码）**
 
@@ -58,10 +59,10 @@ failed to apply loader entry … (dsh-stats-hud): slot "conversation.composer.do
 - **从本地仓库安装**（`link:` 依赖）：更新仓库内容（`git pull`，或把新文件拷
   过去）。客户端部分会由 `@deepseek-ai/dsh-client-hmr` 热重载进正在运行的页
   面；仅当插件的宿主部分或其 `cordis.patch.yml` 补丁有变化时，才需要重启
-  `dsh web`。
+  宿主（Desktop 应用或 `dsh web`）。
 - **从 GitHub 或 npm 安装**：用 `dsh plugin --profile <profile> update dsh-stats-hud`
-  重新解析最新版本，或先 `remove` 再重新 `add` 该包，然后**重启 `dsh web`**——
-  新解析出的安装路径会在启动时扫描。
+  重新解析最新版本，或先 `remove` 再重新 `add` 该包，然后**重启宿主**——
+  新解析出的安装路径会在启动时组合。
 
 快速确认是否已更新到修复版：插件客户端代码应包含新的注册写法
 `ctx.slots.inject("conversation.composer.dock", …)`（见 `lib/client.js`）。
@@ -118,7 +119,7 @@ dsh plugin --profile <profile> add /path/to/dsh-stats-hud
 dsh plugin --profile <profile> add https://github.com/lauytgary/dsh_hud_plugin
 ```
 
-然后**重启宿主**——Desktop 应用或 `dsh web`——因为加载器条目在启动时扫描（`dsh web` 重启后还需刷新页面）。该插件以 `link:` 依赖方式安装，本地修改永远无需重新安装；挂载了 `@deepseek-ai/dsh-client-hmr` 的 profile 还会轮询客户端 bundle 并重新应用插件，因此**修改 `lib/client.js` 后，HUD 会热重载进正在运行的页面**（无需重启，也无需手动刷新）。只有新增、移除或更新插件——即 loader 条目本身发生变化——时才需要重启。
+然后**重启宿主**——Desktop 应用或 `dsh web`——让加载器在启动时组合新条目（`dsh web` 重启后还需刷新页面）。若从**设置 → Plugins**安装，则走同一个 plugin manager、对运行中的应用**即时生效，无需重启**。该插件以 `link:` 依赖方式安装，本地修改永远无需重新安装；两个 profile 默认挂载的 `@deepseek-ai/dsh-client-hmr` 会轮询套件的 client 入口文件并重新应用插件，因此**修改 `lib/client.js` 后，HUD 会热重载进正在运行的页面**（无需重启，也无需手动刷新）。只有通过 CLI 新增、移除或更新插件——即 loader 条目本身发生变化——时才需要重启。
 
 安装后可在**设置 → Plugins（插件列表）**中看到它：
 
