@@ -18,7 +18,7 @@
 
 ### 环境要求
 
-- DeepSeek Harness `dsh` **0.2.1-rc.5**（macOS；Desktop 应用内置运行时）。插槽注册为「先宣告、后挂载」，因此插件通过 `ctx.slots.inject(...)` 模式注册——见更新记录
+- DeepSeek Harness `dsh` **0.2.2-rc.3**（macOS；Desktop 应用内置运行时）。插槽注册为「先宣告、后挂载」，因此插件通过 `ctx.slots.inject(...)` 模式注册；固定浮层必须 portal 到 `<body>`，否则会被输入区的包含块吞掉——见更新记录
 - pnpm（用于插件管理）
 
 ### Desktop 应用（推荐）
@@ -56,6 +56,14 @@ Desktop 应用用 `--profile desktop`，`dsh web` 用 `web`。该命令会写入
 - 会话记录过至少一步之后，HUD 竖栏出现在窗口最右侧。
 
 ## 更新记录
+
+**2026-11-17 — 适配 DSH 0.2.2-rc.3：HUD 改为 portal 到 `<body>`**
+
+- 修复升级后 HUD 位置错乱：竖栏不再贴在窗口右侧垂直居中，而是掉到下方、压住输入区，底部被窗口边缘切掉。原因是 0.2.2 把输入区包进 `position: sticky` 且带 `will-change: transform` 的 **composer seat**；带 transform（含 `will-change: transform`）的祖先会成为 `position: fixed` 后代的**包含块**，于是 `top: 50%` / `right: 12px` 变成相对输入区计算，面板被居中在输入区上并溢出窗口底部。DSH 自己的 dock 目录说明也写明：fixed 浮层必须 portal 到 document body，因为 docked composer 会把它包住。
+- 改法：面板改由 `react-dom` 的 `createPortal` 渲染到 `<body>`，`position: fixed` 重新相对视口；dock 内只留下一个零尺寸 `.gsh-anchor`，供响应式档位探测继续用 `[data-composer-card]` 量右侧剩余宽度，档位逻辑本身不变。
+- manifest：`dsh.client.external` 声明 `react` 与 `react-dom`（两者都由客户端模块表提供，不额外安装）。包版本升到 `0.1.3`。
+- 顺带修掉速度表盘两端刻度被裁的问题（`300` 显示成 `30`）：`viewBox` 左右各留 8 单位，宽度同步放大以保持盘面大小不变。
+- 重新核对 0.2.2-rc.3 的 dock 契约：仍是 `kind: list` / `scope: session`，仍是 `activity`（order 0）与 `usage`（order 1）两个原生条目，`useSession` / `useProjection` 与四个投影字段名未变。
 
 **2026-11-17 — README 改为简体中文优先，安装移到简介之后**
 
@@ -121,6 +129,14 @@ failed to apply loader entry … (dsh-stats-hud): slot "conversation.composer.do
 若重启后仍弹出错误，请强制刷新浏览器页面（`Cmd+Shift+R`）——插件的浏览器代
 码按页面加载缓存。
 
+### 升级到 DSH `0.2.2-rc.3` 后 HUD 掉到下方
+
+`0.2.2-rc.3` 把输入区包进带 `will-change: transform` 的 composer seat，旧的
+`position: fixed` 面板会以它为包含块：竖栏不再贴右边缘垂直居中，而是掉到下方、
+压住输入区，底部被窗口边缘切掉。把插件更新到 `0.1.3`（面板改为 portal 到
+`<body>`）即可；客户端部分会热重载，页面没变化时强制刷新一次
+（`Cmd+Shift+R`）。
+
 ## 仪表（全英文、LLM 术语）
 
 | 仪表 | 数据 | 满量程 | 超出满量程 |
@@ -174,9 +190,9 @@ dsh plugin --profile <profile> remove dsh-stats-hud
 
 ## 工作原理
 
-- 注册到 `conversation.composer.dock` 插槽（id `dsh-stats-hud`，顺序 1）——**只是为了拿到会话作用域的 hooks**（`useSession` / `useProjection`）；面板本身是 `position: fixed`，不占用布局空间，原有统计行保持不变。注册通过 `ctx.slots.inject(...)` 进行——新版 DSH 要求插槽先由其父条目声明，`inject` 会等待该声明就绪后再注册。
+- 注册到 `conversation.composer.dock` 插槽（id `dsh-stats-hud`，顺序 1）——**只是为了拿到会话作用域的 hooks**（`useSession` / `useProjection`）。面板本身是 `position: fixed`，由 `react-dom` 的 `createPortal` 渲染到 `<body>`：DSH `0.2.2` 的输入区包在带 `will-change: transform` 的 composer seat 里，就地渲染会被它当成包含块。插槽里只留一个零尺寸的 `.gsh-anchor`，供响应式档位探测量测输入区的右侧剩余空间；面板不占用布局空间，原有统计行保持不变。注册通过 `ctx.slots.inject(...)` 进行——新版 DSH 要求插槽先由其父条目声明，`inject` 会等待该声明就绪后再注册。
 - 数据来自与原生界面相同的投影：`useProjection("sessionStats")`、`useProjection("tokenUsage")`、`useProjection("contextPressure")` 和 `useProjection("contextBreakdown")`——宿主端零改动。
-- `exports.inject = ["slots"]` 是必需的：DSH 的 ctx 是严格代理，读取未在其中声明的服务会抛错（`service "slots" is not declared by your plugin`）。包级 `dsh.client` 声明无需 `inject` 列表——本 bundle 只 require `react`。
+- `exports.inject = ["slots"]` 是必需的：DSH 的 ctx 是严格代理，读取未在其中声明的服务会抛错（`service "slots" is not declared by your plugin`）。包级 `dsh.client` 声明无需 `inject` 列表——本 bundle 只 require `react` 与 `react-dom`（两者都由 Web 前端的模块表提供，`dsh.client.external` 已声明）。
 - 面板是 `pointer-events: none`（点击穿透）；只有 CONTEXT USAGE 条重新启用了指针事件，以便悬停提示生效。
 
 ## 文件结构
@@ -215,7 +231,7 @@ test-only 的 `__test` 导出由 `DSH_HUD_TEST` 环境变量门控，浏览器�
 - `SpeedGauge` 的 `redline = 200`（初始值；以 100 tok/s 为步进自动缩放）
 - `ContextUsageBar`：分段颜色和 ≥80% 实心红阈值；悬停提示从 `contextBreakdown` 投影读取 `systemTokens` / `toolsTokens` / `messageTokens`
 - 滚动计数器：`DRUM`（3× 0-9）、`DRUM_H = 15`（每位数像素）、`RollingValue` 的进位 / 借位公式以及挂载时的旋转启动
-- CSS：`position:fixed; right:12px`；档位在 `tierOf(space, width)` 中——`width < 800` → `hidden`（窗口宽度兜底）、`space >= 180` → `full`、其余 → `mini`（测量失败时回退为 `full`）以及 `.gsh-root.gsh-*` 规则；`@media (prefers-reduced-motion: reduce)` 会停用脉冲与过渡动画
+- CSS：`position:fixed; right:12px`（经 `<body>` portal，相对视口）；档位在 `tierOf(space, width)` 中——`width < 800` → `hidden`（窗口宽度兜底）、`space >= 180` → `full`、其余 → `mini`（测量失败时回退为 `full`）以及 `.gsh-root.gsh-*` 规则；`@media (prefers-reduced-motion: reduce)` 会停用脉冲与过渡动画
 
 ## 发布到 npm（可选）
 

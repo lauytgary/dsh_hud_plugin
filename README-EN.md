@@ -18,7 +18,7 @@ A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
 
 ### Requirements
 
-- DeepSeek Harness `dsh` **0.2.1-rc.5** (macOS; the Desktop app's bundled runtime). Slot registration is declaration-gated, so the plugin registers through the `ctx.slots.inject(...)` pattern — see Changelog
+- DeepSeek Harness `dsh` **0.2.2-rc.3** (macOS; the Desktop app's bundled runtime). Slot registration is declaration-gated, so the plugin registers through the `ctx.slots.inject(...)` pattern, and a fixed overlay must portal to `<body>` or the composer's containing block captures it — see Changelog
 - pnpm (for plugin management)
 
 ### Desktop app (recommended)
@@ -56,6 +56,14 @@ Use `--profile desktop` for the Desktop app and `web` for a `dsh web` profile. T
 - The HUD column sits at the far right edge of the window once the session has recorded a step.
 
 ## Changelog
+
+**2026-11-17 — Adapted to DSH 0.2.2-rc.3: the HUD is portalled into `<body>`**
+
+- Fixed the post-upgrade misplacement: the column was no longer centred against the window's right edge but dropped low, covering the composer, with its bottom clipped by the window edge. DSH 0.2.2 wraps the composer in a `position: sticky` **composer seat** carrying `will-change: transform`; an ancestor with a transform (including `will-change: transform`) becomes the **containing block** of `position: fixed` descendants, so `top: 50%` / `right: 12px` resolved against the composer instead of the viewport and the panel overflowed the window bottom. DSH's own dock catalog states the same rule: a fixed overlay must portal to the document body because the docked composer contains it.
+- Fix: the panel is rendered into `<body>` through `react-dom`'s `createPortal`, so `position: fixed` is viewport-relative again; only a zero-size `.gsh-anchor` stays in the dock so the responsive tier probe can still measure the free space right of `[data-composer-card]`. The tier logic itself is unchanged.
+- Manifest: `dsh.client.external` declares `react` and `react-dom` (both come from the client module table, nothing extra is installed). Package version bumped to `0.1.3`.
+- Also fixed the clipped speedometer end labels (`300` read as `30`): the SVG `viewBox` gains 8 user units on each side, with the width scaled to keep the dial the same on-screen size.
+- Re-checked the 0.2.2-rc.3 dock contract: still `kind: list` / `scope: session`, still the two native entries `activity` (order 0) and `usage` (order 1), and `useSession` / `useProjection` plus all four projection field names are unchanged.
 
 **2026-11-17 — Simplified Chinese README by default; Install moved up**
 
@@ -123,6 +131,16 @@ contain the new registration pattern `ctx.slots.inject("conversation.composer.do
 If the alert still shows after the restart, hard-refresh the browser page
 (`Cmd+Shift+R`) — the plugin's browser bundle is cached per page load.
 
+### The HUD drops low after upgrading to DSH `0.2.2-rc.3`
+
+`0.2.2-rc.3` wraps the composer in a composer seat carrying
+`will-change: transform`, and an old `position: fixed` panel takes it as its
+containing block: the column stops being centred against the right edge and
+instead sits low, covering the composer, with its bottom clipped by the window.
+Update the plugin to `0.1.3` (the panel now portals to `<body>`); the client
+half hot-reloads, so just hard-refresh the page (`Cmd+Shift+R`) if nothing
+moves.
+
 ## Instruments (all-English, LLM terminology)
 
 | Instrument | Data | Full scale | Past full scale |
@@ -176,9 +194,9 @@ dsh plugin --profile <profile> remove dsh-stats-hud
 
 ## How it works
 
-- Registers into the `conversation.composer.dock` slot (id `dsh-stats-hud`, order 1) — **only to receive the session-scoped hooks** (`useSession`/`useProjection`); the panel itself is `position: fixed`, takes no layout space, and the stock stats line stays untouched. Registration goes through `ctx.slots.inject(...)`, which waits for the slot to be declared by its parent entry (required since DSH made slot registration declaration-gated).
+- Registers into the `conversation.composer.dock` slot (id `dsh-stats-hud`, order 1) — **only to receive the session-scoped hooks** (`useSession`/`useProjection`). The panel itself is `position: fixed` and is rendered into `<body>` by `react-dom`'s `createPortal`, because DSH `0.2.2` wraps the composer in a composer seat carrying `will-change: transform` and would otherwise become the panel's containing block. A zero-size `.gsh-anchor` stays in the slot so the responsive tier probe can still measure the free space right of the composer; the panel takes no layout space and the stock stats line stays untouched. Registration goes through `ctx.slots.inject(...)`, which waits for the slot to be declared by its parent entry (required since DSH made slot registration declaration-gated).
 - Data comes from the same projections the stock UI uses: `useProjection("sessionStats")`, `useProjection("tokenUsage")`, `useProjection("contextPressure")` and `useProjection("contextBreakdown")` — zero host-side changes.
-- `exports.inject = ["slots"]` is mandatory: DSH's ctx is a strict proxy, and reading any service not listed there throws (`service "slots" is not declared by your plugin`). The package-level `dsh.client` declaration needs no `inject` list — the bundle requires nothing but `react`.
+- `exports.inject = ["slots"]` is mandatory: DSH's ctx is a strict proxy, and reading any service not listed there throws (`service "slots" is not declared by your plugin`). The package-level `dsh.client` declaration needs no `inject` list — the bundle requires `react` and `react-dom` only (both come from the web front end's module table; declared in `dsh.client.external`).
 - The panel is `pointer-events: none` (click-through); only the CONTEXT USAGE bar re-enables pointer events so its hover tooltip works.
 
 ## Files
@@ -219,7 +237,7 @@ All constants live in `lib/client.js`:
 - `SpeedGauge`'s `redline = 200` (initial; auto-scales in 100 tok/s steps)
 - `ContextUsageBar`: segment colors and the ≥80% solid-red threshold; the hover tooltip reads `systemTokens` / `toolsTokens` / `messageTokens` from the `contextBreakdown` projection
 - Rolling counter: `DRUM` (3× 0-9), `DRUM_H = 15` (px per digit), `RollingValue`'s carry/borrow formula and mount spin-up
-- CSS: `position:fixed; right:12px`; tiers in `tierOf(space, width)` — `width < 800` → `hidden` (window-width floor), `space >= 180` → `full`, else `mini` (measurement failure falls back to `full`) — plus the `.gsh-root.gsh-*` rules; `@media (prefers-reduced-motion: reduce)` disables pulses and transitions
+- CSS: `position:fixed; right:12px` (resolved against the viewport through the `<body>` portal); tiers in `tierOf(space, width)` — `width < 800` → `hidden` (window-width floor), `space >= 180` → `full`, else `mini` (measurement failure falls back to `full`) — plus the `.gsh-root.gsh-*` rules; `@media (prefers-reduced-motion: reduce)` disables pulses and transitions
 
 ## Publishing to npm (optional)
 

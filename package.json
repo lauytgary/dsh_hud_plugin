@@ -1,7 +1,7 @@
 {
   "name": "dsh-stats-hud",
   "description": "Sci-fi HUD: turns the session stats line into game-style level bars, a speedometer and a rolling token counter.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "type": "module",
   "main": "lib/index.js",
@@ -19,7 +19,11 @@
       "patch": "./cordis.patch.yml"
     },
     "client": {
-      "platform": "web"
+      "platform": "web",
+      "external": [
+        "react",
+        "react-dom"
+      ]
     }
   },
   "license": "MIT"

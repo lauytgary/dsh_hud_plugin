@@ -25,6 +25,9 @@ function loadBundle() {
 	assert.notEqual(captured, null, "loader factory was not captured");
 	const mod = captured((id) => {
 		if (id === "react") return { memo: (fn) => fn };
+		// the panel is portalled into <body>; the bundle requires react-dom at
+		// module scope, so the stub only needs createPortal to exist
+		if (id === "react-dom") return { createPortal: (node) => node };
 		throw new Error(`unexpected require: ${id}`);
 	});
 	assert.ok(mod.__test, "test-only __test export is missing (DSH_HUD_TEST gate)");
