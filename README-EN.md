@@ -57,6 +57,13 @@ Use `--profile desktop` for the Desktop app and `web` for a `dsh web` profile. T
 
 ## Changelog
 
+**2026-11-17 — a split view shows only the rightmost pane's HUD; measurement is per pane**
+
+- Fixed the two stacked HUDs: a split view (a subagent pane beside its parent) mounts one composer — and one dock — per pane, and every instance used to pin its panel to the window's right edge, so the panels landed exactly on top of each other. Only the **rightmost pane** renders the panel now (`rightmostPane()` compares the right edges of every `[data-conversation-content]`); the other instances keep just the zero-size `.gsh-anchor` probe, so when the rightmost pane closes the remaining one takes over automatically.
+- Fixed the left pane counting its neighbour as free space: the tier now measures `paneSpace(paneRight, cardRight)` — the gutter between this pane's composer card and this pane's own right edge — and the panel's right inset comes from `paneInset()`, relative to its own pane. Opening a right sidebar (terminal/files/browser) therefore moves the HUD with the pane instead of leaving it floating over the panel.
+- A split pane only has ~20px of gutter, so it lands on `mini` and covers roughly 60px of that pane's text — a deliberate trade-off (the panel is click-through and every pane keeps its native stats line). Single-pane behaviour is unchanged (right edge, `full`).
+- New pure helpers `paneSpace` / `paneInset` (exported through `__test` and covered by the unit tests, now 12). Package `0.1.5`.
+
 **2026-11-17 — `CONTEXT` gains a `TOTAL` row (the stock usage sum)**
 
 - The `CONTEXT` block ends with a new `TOTAL` row: CACHE HIT + CACHE MISSED + OUTPUT, which is exactly the number the stock token-usage pill under the composer prints (`billedInputTokens(usage) + usage.outputTokens`, confirmed against the 0.2.2 `UsagePill` source). A hairline above it keeps it reading as a sum rather than a fourth bucket.
@@ -167,7 +174,10 @@ Hovering the `CONTEXT USAGE` bar pops up a tooltip with the token breakdown:
 
 ## Responsive layout
 
-The HUD adapts to the free space right of the chat column (measured live with a ResizeObserver, so sidebar drags, the details drawer and window resizes all count):
+The HUD measures **its own conversation pane**, not the window: free space = the gutter between this pane's composer card and this pane's right edge (measured live with a ResizeObserver, so sidebar drags, a right sidebar and window resizes all count).
+
+- **Only the rightmost pane draws the HUD.** A split view (a subagent pane beside its parent) mounts one composer — and therefore one dock and one HUD — per pane; two `position: fixed` panels would land exactly on top of each other. The left panes render nothing, so you see the rightmost pane's numbers (the subagent's, in that layout).
+- The panel's inset is relative to **its own pane's** right edge too, so opening a right sidebar (terminal/files/browser) moves the HUD with the pane instead of leaving it floating over the panel.
 
 | Tier | Condition | Shows |
 | --- | --- | --- |
@@ -175,7 +185,7 @@ The HUD adapts to the free space right of the chat column (measured live with a 
 | `mini` | Window ≥ 800px and free space < 180px | Clock (short PEAK/OFF PEAK badge) + compact rolling rows (Step/Turn/HIT/MISS/OUT/TOTAL) |
 | `hidden` | Window < 800px | Nothing (element stays mounted, `display:none`) |
 
-The window width is a hard floor: below 800px the panel hides even with room to spare, and only the measured space decides `full` vs `mini` (the full panel needs 164px + 12px margin). `mini` may slightly overlap the chat on narrow windows — safe because the panel is click-through. If the chat column can't be measured, the panel falls back to `full`.
+The window width is a hard floor: below 800px the panel hides even with room to spare, and only the measured space decides `full` vs `mini` (the full panel needs 164px + 12px margin). In a split view each pane only has ~20px of gutter, so `mini` covers roughly 60px of that pane's text — deliberate: the panel is click-through and every pane keeps its native stats line. If the pane or card markers can't be found, the panel falls back to `full` at the plain 12px inset.
 
 The `mini` tier in a narrow window:
 
@@ -200,7 +210,7 @@ dsh plugin --profile <profile> remove dsh-stats-hud
 
 ## How it works
 
-- Registers into the `conversation.composer.dock` slot (id `dsh-stats-hud`, order 1) — **only to receive the session-scoped hooks** (`useSession`/`useProjection`). The panel itself is `position: fixed` and is rendered into `<body>` by `react-dom`'s `createPortal`, because DSH `0.2.2` wraps the composer in a composer seat carrying `will-change: transform` and would otherwise become the panel's containing block. A zero-size `.gsh-anchor` stays in the slot so the responsive tier probe can still measure the free space right of the composer; the panel takes no layout space and the stock stats line stays untouched. Registration goes through `ctx.slots.inject(...)`, which waits for the slot to be declared by its parent entry (required since DSH made slot registration declaration-gated).
+- Registers into the `conversation.composer.dock` slot (id `dsh-stats-hud`, order 1) — **only to receive the session-scoped hooks** (`useSession`/`useProjection`). The panel itself is `position: fixed` and is rendered into `<body>` by `react-dom`'s `createPortal`, because DSH `0.2.2` wraps the composer in a composer seat carrying `will-change: transform` and would otherwise become the panel's containing block. A zero-size `.gsh-anchor` stays in the slot so the probe can measure the gutter of **this pane** (`[data-conversation-content]`) and derive the right inset; the panel takes no layout space and the stock stats line stays untouched. In a split view only the rightmost pane renders the panel (see Responsive layout). Registration goes through `ctx.slots.inject(...)`, which waits for the slot to be declared by its parent entry (required since DSH made slot registration declaration-gated).
 - Data comes from the same projections the stock UI uses: `useProjection("sessionStats")`, `useProjection("tokenUsage")`, `useProjection("contextPressure")` and `useProjection("contextBreakdown")` — zero host-side changes.
 - `exports.inject = ["slots"]` is mandatory: DSH's ctx is a strict proxy, and reading any service not listed there throws (`service "slots" is not declared by your plugin`). The package-level `dsh.client` declaration needs no `inject` list — the bundle requires `react` and `react-dom` only (both come from the web front end's module table; declared in `dsh.client.external`).
 - The panel is `pointer-events: none` (click-through); only the CONTEXT USAGE bar re-enables pointer events so its hover tooltip works.
@@ -228,7 +238,7 @@ npm test   # pure-function unit tests (node:test, no dependencies; Node ≥ 18)
 
 The tests load `lib/client.js` in a Node VM with a stubbed loader (no DOM
 needed) and exercise the pure helpers — `formatTokens`, `formatDuration`,
-`formatTps`, `tierOf`, `billedInputTokens`, `totalTokens`, `cacheHitPercent`, `isDsApiPeak`. The test-only
+`formatTps`, `tierOf`, `paneSpace`, `paneInset`, `billedInputTokens`, `totalTokens`, `cacheHitPercent`, `isDsApiPeak`. The test-only
 `__test` export is gated behind the `DSH_HUD_TEST` env var, so the browser
 bundle is unaffected.
 
@@ -243,7 +253,7 @@ All constants live in `lib/client.js`:
 - `SpeedGauge`'s `redline = 200` (initial; auto-scales in 100 tok/s steps)
 - `ContextUsageBar`: segment colors and the ≥80% solid-red threshold; the hover tooltip reads `systemTokens` / `toolsTokens` / `messageTokens` from the `contextBreakdown` projection
 - Rolling counter: `DRUM` (3× 0-9), `DRUM_H = 15` (px per digit), `RollingValue`'s carry/borrow formula and mount spin-up
-- CSS: `position:fixed; right:12px` (resolved against the viewport through the `<body>` portal); tiers in `tierOf(space, width)` — `width < 800` → `hidden` (window-width floor), `space >= 180` → `full`, else `mini` (measurement failure falls back to `full`) — plus the `.gsh-root.gsh-*` rules; `@media (prefers-reduced-motion: reduce)` disables pulses and transitions
+- CSS: `position:fixed` (the right inset is written as an inline style from `paneInset()`; the `right:12px` in the CSS is only the fallback when nothing could be measured); tiers in `tierOf(space, width)` — `width < 800` → `hidden` (window-width floor), `space >= 180` → `full`, else `mini` (measurement failure falls back to `full`), where `space` comes from `paneSpace(paneRight, cardRight)`; `rightmostPane()` decides which pane may draw the panel; plus the `.gsh-root.gsh-*` rules and `@media (prefers-reduced-motion: reduce)` (pulses and transitions off)
 
 ## Publishing to npm (optional)
 

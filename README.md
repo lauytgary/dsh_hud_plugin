@@ -57,6 +57,13 @@ Desktop 应用用 `--profile desktop`，`dsh web` 用 `web`。该命令会写入
 
 ## 更新记录
 
+**2026-11-17 — 分割視窗只顯示最右 pane 的 HUD；量測改以 pane 為單位**
+
+- 修掉「兩個 HUD 疊在一起」：分割視窗（例如開 subagent）每一格都有自己的 composer 與 dock，之前每個實例都把面板貼在視窗右緣，於是兩塊面板完全重疊。現在只有**最右邊那一格 pane** 會渲染面板（`rightmostPane()` 比較各 `[data-conversation-content]` 的右緣），其餘實例只留零尺寸的 `.gsh-anchor` 當探針——所以最右那格關掉時，剩下的一格會自動接手。
+- 修掉「左格把右格當成空位」：檔位量測改成 `paneSpace(paneRight, cardRight)`，也就是「自己這格」卡片右緣到 pane 右緣的空隙；面板右距也改由 `paneInset()` 相對自己 pane 的右緣計算，因此開右側欄（terminal/files/browser）時 HUD 會跟著 pane 縮進來，不會浮在面板上。
+- 分割視窗每格只有約 20px 空隙，所以會落在 `mini` 並壓到該格約 60px 的文字——這是刻意的取捨（面板可點擊穿透，每格底部仍有原生統計列）。單 pane 的日常行為不變（貼右緣、`full`）。
+- 新增純函式 `paneSpace` / `paneInset`（進 `__test` 與單元測試，現共 12 個測試）。包版本 `0.1.5`。
+
 **2026-11-17 — `CONTEXT` 区块新增 `TOTAL` 行（与官方用量合计一致）**
 
 - `CONTEXT` 区块最后多一行 `TOTAL`：数值 = CACHE HIT + CACHE MISSED + OUTPUT，与官方输入框底部那颗 token 用量 pill 是同一个算法（`billedInputTokens(usage) + usage.outputTokens`，已对照 0.2.2 原生 `UsagePill` 源码确认）。上方加一条细分隔线，读起来是「合计」而不是第四个桶。
@@ -163,7 +170,10 @@ Agent 运行期间，整个面板会「呼吸」起伏，进度条随之脉动�
 
 ## 响应式布局
 
-HUD 会根据聊天栏右侧的可用空间自适应（通过 ResizeObserver 实时测量，因此拖拽侧栏、打开详情抽屉、调整窗口大小都会生效）：
+HUD 以「**自己所在的对话 pane**」为单位自适应，而不是整个窗口：可用空间 = 这一格 composer 卡片右缘 → 这一格 pane 右缘（通过 ResizeObserver 实时测量，因此拖拽侧栏、打开右侧栏、调整窗口大小都会生效）。
+
+- **只有最右边的 pane 会画 HUD**。分割视窗（例如开 subagent）时每一格都有自己的 composer 与 dock，如果两个都画，两个 `position: fixed` 面板会完全叠在一起；现在左格不画，只有贴着窗口右缘的那一格显示，所以看到的是最右格（subagent）的数字。
+- 面板的右距也是相对**自己 pane** 的右缘（`--dsh` 右侧栏打开时 pane 变窄，HUD 会跟着缩进来，不会浮在侧栏上面）。
 
 | 档位 | 条件 | 显示内容 |
 | --- | --- | --- |
@@ -171,7 +181,7 @@ HUD 会根据聊天栏右侧的可用空间自适应（通过 ResizeObserver 实
 | `mini` | 窗口 ≥ 800px 且可用空间 < 180px | 时钟（短版 PEAK/OFF PEAK 徽章）+ 紧凑滚动行（Step/Turn/HIT/MISS/OUT/TOTAL） |
 | `hidden` | 窗口 < 800px | 不显示（元素保持挂载，`display:none`） |
 
-窗口宽度是硬性底线：低于 800px 时即使空间充足也会隐藏面板，只有测得的空间决定 `full` 还是 `mini`（完整面板需要 164px + 12px 边距）。窄窗口下 `mini` 可能与聊天栏轻微重叠——由于面板可点击穿透，这很安全。若无法测量聊天栏，面板会回退为 `full`。
+窗口宽度是硬性底线：低于 800px 时即使空间充足也会隐藏面板，只有测得的空间决定 `full` 还是 `mini`（完整面板需要 164px + 12px 边距）。分割视窗时每一格只有 ~20px 空隙，`mini` 会压到该格约 60px 的文字——这是刻意的选择：面板可点击穿透，而且原生统计列仍然在每格底部。若测不到 pane / 卡片的标记，面板会回退为 `full` 并把右距退回 12px。
 
 `mini` 档位在窄窗口下的效果：
 
@@ -196,7 +206,7 @@ dsh plugin --profile <profile> remove dsh-stats-hud
 
 ## 工作原理
 
-- 注册到 `conversation.composer.dock` 插槽（id `dsh-stats-hud`，顺序 1）——**只是为了拿到会话作用域的 hooks**（`useSession` / `useProjection`）。面板本身是 `position: fixed`，由 `react-dom` 的 `createPortal` 渲染到 `<body>`：DSH `0.2.2` 的输入区包在带 `will-change: transform` 的 composer seat 里，就地渲染会被它当成包含块。插槽里只留一个零尺寸的 `.gsh-anchor`，供响应式档位探测量测输入区的右侧剩余空间；面板不占用布局空间，原有统计行保持不变。注册通过 `ctx.slots.inject(...)` 进行——新版 DSH 要求插槽先由其父条目声明，`inject` 会等待该声明就绪后再注册。
+- 注册到 `conversation.composer.dock` 插槽（id `dsh-stats-hud`，顺序 1）——**只是为了拿到会话作用域的 hooks**（`useSession` / `useProjection`）。面板本身是 `position: fixed`，由 `react-dom` 的 `createPortal` 渲染到 `<body>`：DSH `0.2.2` 的输入区包在带 `will-change: transform` 的 composer seat 里，就地渲染会被它当成包含块。插槽里只留一个零尺寸的 `.gsh-anchor`，供档位探测从**自己这一格 pane**（`[data-conversation-content]`）量测剩余空间、算出右距；面板不占用布局空间，原有统计行保持不变。分割视窗时只有最右一格会渲染面板（见「响应式布局」）。注册通过 `ctx.slots.inject(...)` 进行——新版 DSH 要求插槽先由其父条目声明，`inject` 会等待该声明就绪后再注册。
 - 数据来自与原生界面相同的投影：`useProjection("sessionStats")`、`useProjection("tokenUsage")`、`useProjection("contextPressure")` 和 `useProjection("contextBreakdown")`——宿主端零改动。
 - `exports.inject = ["slots"]` 是必需的：DSH 的 ctx 是严格代理，读取未在其中声明的服务会抛错（`service "slots" is not declared by your plugin`）。包级 `dsh.client` 声明无需 `inject` 列表——本 bundle 只 require `react` 与 `react-dom`（两者都由 Web 前端的模块表提供，`dsh.client.external` 已声明）。
 - 面板是 `pointer-events: none`（点击穿透）；只有 CONTEXT USAGE 条重新启用了指针事件，以便悬停提示生效。
@@ -223,7 +233,7 @@ npm test   # 纯函数单元测试（node:test，零依赖；需要 Node ≥ 18�
 ```
 
 测试会用 Node VM 加载 `lib/client.js`（stub 掉 loader，无需 DOM），覆盖纯函数：
-`formatTokens` / `formatDuration` / `formatTps` / `tierOf` / `billedInputTokens` / `totalTokens` / `cacheHitPercent` / `isDsApiPeak`。
+`formatTokens` / `formatDuration` / `formatTps` / `tierOf` / `paneSpace` / `paneInset` / `billedInputTokens` / `totalTokens` / `cacheHitPercent` / `isDsApiPeak`。
 test-only 的 `__test` 导出由 `DSH_HUD_TEST` 环境变量门控，浏览器端不会触发，bundle 不受影响。
 
 ## 参数调优
@@ -237,7 +247,7 @@ test-only 的 `__test` 导出由 `DSH_HUD_TEST` 环境变量门控，浏览器�
 - `SpeedGauge` 的 `redline = 200`（初始值；以 100 tok/s 为步进自动缩放）
 - `ContextUsageBar`：分段颜色和 ≥80% 实心红阈值；悬停提示从 `contextBreakdown` 投影读取 `systemTokens` / `toolsTokens` / `messageTokens`
 - 滚动计数器：`DRUM`（3× 0-9）、`DRUM_H = 15`（每位数像素）、`RollingValue` 的进位 / 借位公式以及挂载时的旋转启动
-- CSS：`position:fixed; right:12px`（经 `<body>` portal，相对视口）；档位在 `tierOf(space, width)` 中——`width < 800` → `hidden`（窗口宽度兜底）、`space >= 180` → `full`、其余 → `mini`（测量失败时回退为 `full`）以及 `.gsh-root.gsh-*` 规则；`@media (prefers-reduced-motion: reduce)` 会停用脉冲与过渡动画
+- CSS：`position:fixed`（右距由 JS 依 `paneInset()` 写成内联 style，CSS 里的 `right:12px` 只是没有测量结果时的后备）；档位在 `tierOf(space, width)` 中——`width < 800` → `hidden`（窗口宽度兜底）、`space >= 180` → `full`、其余 → `mini`（测量失败时回退为 `full`），`space` 来自 `paneSpace(paneRight, cardRight)`；`rightmostPane()` 决定哪一格 pane 可以画面板；另有 `.gsh-root.gsh-*` 规则与 `@media (prefers-reduced-motion: reduce)`（停用脉冲与过渡动画）
 
 ## 发布到 npm（可选）
 

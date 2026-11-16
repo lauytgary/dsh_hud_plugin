@@ -1,7 +1,7 @@
 {
   "name": "dsh-stats-hud",
   "description": "Sci-fi HUD: turns the session stats line into game-style level bars, a speedometer and a rolling token counter.",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "type": "module",
   "main": "lib/index.js",

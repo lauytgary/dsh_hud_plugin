@@ -34,7 +34,7 @@ function loadBundle() {
 	return mod.__test;
 }
 
-const { formatTokens, formatDuration, formatTps, tierOf, billedInputTokens, totalTokens, cacheHitPercent, isDsApiPeak } = loadBundle();
+const { formatTokens, formatDuration, formatTps, tierOf, paneSpace, paneInset, billedInputTokens, totalTokens, cacheHitPercent, isDsApiPeak } = loadBundle();
 
 test("formatTokens", () => {
 	assert.equal(formatTokens(0), "0");
@@ -70,6 +70,26 @@ test("tierOf", () => {
 	assert.equal(tierOf(Infinity, 1200), "full");
 	assert.equal(tierOf(180, 1200), "full");
 	assert.equal(tierOf(179, 1200), "mini");
+	// a split pane barely wider than its composer card still gets the mini strip
+	assert.equal(tierOf(23, 1366), "mini");
+	assert.equal(tierOf(0, 1366), "mini");
+});
+
+test("paneSpace: gutter inside OUR pane, never the neighbouring one", () => {
+	// single pane: pane right edge == window right edge
+	assert.equal(paneSpace(1366, 1181), 185);
+	// split view: the right pane's card ends 23px before its own pane edge
+	assert.equal(paneSpace(1404, 1381), 23);
+	// a card overflowing its pane clamps to 0 instead of going negative
+	assert.equal(paneSpace(1000, 1200), 0);
+});
+
+test("paneInset: distance from the window edge to the pane plus the margin", () => {
+	assert.equal(paneInset(1366, 1366), 12);
+	// a right sidebar pushes the pane in: the panel follows it
+	assert.equal(paneInset(1000, 1366), 378);
+	assert.equal(paneInset(1400, 1366), 12); // clamped, never negative
+	assert.equal(paneInset(1000, 1366, 20), 386);
 });
 
 test("billedInputTokens", () => {
