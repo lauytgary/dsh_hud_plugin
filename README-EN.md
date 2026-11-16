@@ -30,7 +30,6 @@ A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
    | --- | --- |
    | Git address | `https://github.com/lauytgary/dsh_hud_plugin` |
    | Local checkout | `/absolute/path/to/dsh-stats-hud` |
-   | npm package | `dsh-stats-hud` (not published yet) |
 
 3. Press **Install**, let pnpm finish, then press **Enable now**.
 4. The HUD appears at the far right of the conversation right away — no restart, no page refresh.
@@ -60,6 +59,7 @@ Use `--profile desktop` for the Desktop app and `web` for a `dsh web` profile. T
 - `README.md` is now the Simplified Chinese README (the page GitHub renders by default); the English one moved to `README-EN.md`, and the language switcher on both sides points there. `README-CN.md` no longer exists (it was renamed, so git history follows).
 - Layout: Install now comes right after the intro, with Requirements folded in as its first subsection; the Changelog sits below it. Every other section keeps its previous order.
 - Historical changelog notes that pointed at `README-CN.md` now just say "both READMEs".
+- Dropped the npm package row from the install table (the package is not published yet, so it should not look like a working option); add it back once it is on npm.
 
 **2026-11-05 — Adapted to DSH 0.2.1-rc.5 (the current Desktop release)**
 

@@ -30,7 +30,6 @@
    | --- | --- |
    | Git 地址 | `https://github.com/lauytgary/dsh_hud_plugin` |
    | 本地仓库 | `/absolute/path/to/dsh-stats-hud` |
-   | npm 包名 | `dsh-stats-hud`（尚未发布） |
 
 3. 点 **安装（Install）**，等 pnpm 跑完，再点 **立即启用（Enable now）**。
 4. HUD 会立刻出现在对话最右侧——无需重启，也无需刷新页面。
@@ -60,6 +59,7 @@ Desktop 应用用 `--profile desktop`，`dsh web` 用 `web`。该命令会写入
 - `README.md` 现在是简体中文版（GitHub 默认渲染的那份）；英文版移到 `README-EN.md`，两边顶部的语言切换已同步。`README-CN.md` 不再存在（是重命名，git 历史跟着走）。
 - 排版：简介之后直接进入「安装」，环境要求并入安装一节作为第一小节；更新记录移到安装之后，其余章节顺序不变。
 - 历史更新记录里指向 `README-CN.md` 的说法统一改成「两份 README」。
+- 安装表格移除 npm 包名那一行（套件尚未发布，避免被当成可用途径）；将来发布到 npm 后再加回。
 
 **2026-11-05 — 已适配 DSH 0.2.1-rc.5（当前 Desktop 版本）**
 
