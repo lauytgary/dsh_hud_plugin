@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[**English**](README.md) · **简体中文**
+[**English**](README-EN.md) · **简体中文**
 
 </div>
 
@@ -14,7 +14,52 @@
 
 ![截图](docs/screenshot.png)
 
+## 安装
+
+### 环境要求
+
+- DeepSeek Harness `dsh` **0.2.1-rc.5**（macOS；Desktop 应用内置运行时）。插槽注册为「先宣告、后挂载」，因此插件通过 `ctx.slots.inject(...)` 模式注册——见更新记录
+- pnpm（用于插件管理）
+
+### Desktop 应用（推荐）
+
+1. 打开侧边栏的 **插件（Plugins）** 页，点 **添加插件（Add plugin）**。
+2. 选 **安装第三方插件（Install a third-party plugin）**，粘贴下面任意一种：
+
+   | 形式 | 示例 |
+   | --- | --- |
+   | Git 地址 | `https://github.com/lauytgary/dsh_hud_plugin` |
+   | 本地仓库 | `/absolute/path/to/dsh-stats-hud` |
+   | npm 包名 | `dsh-stats-hud`（尚未发布） |
+
+3. 点 **安装（Install）**，等 pnpm 跑完，再点 **立即启用（Enable now）**。
+4. HUD 会立刻出现在对话最右侧——无需重启，也无需刷新页面。
+
+**插件 → 已安装** 里的卡片会显示它的来源 spec；用本地仓库（`link:`）最方便跟进更新：`git pull` 之后客户端部分会自动热重载。
+
+### 命令行
+
+```sh
+dsh plugin --profile <profile> add https://github.com/lauytgary/dsh_hud_plugin
+```
+
+Desktop 应用用 `--profile desktop`，`dsh web` 用 `web`。该命令会写入依赖**并**选中 bundle，但运行中的宿主只在启动时组合：装完**重启宿主**（`dsh web` 重启后还需刷新页面）。本地路径会以 `link:` 依赖安装，修改 `lib/client.js` 无需重装——`@deepseek-ai/dsh-client-hmr` 会把插件重新应用进正在运行的页面。
+
+### 确认装好了
+
+- **插件 → 已安装** 中 `dsh-stats-hud` 的开关为开启：
+
+  ![插件页中已安装并启用的 dsh-stats-hud](docs/plugin_chi.png)
+
+- 会话记录过至少一步之后，HUD 竖栏出现在窗口最右侧。
+
 ## 更新记录
+
+**2026-11-17 — README 改为简体中文优先，安装移到简介之后**
+
+- `README.md` 现在是简体中文版（GitHub 默认渲染的那份）；英文版移到 `README-EN.md`，两边顶部的语言切换已同步。`README-CN.md` 不再存在（是重命名，git 历史跟着走）。
+- 排版：简介之后直接进入「安装」，环境要求并入安装一节作为第一小节；更新记录移到安装之后，其余章节顺序不变。
+- 历史更新记录里指向 `README-CN.md` 的说法统一改成「两份 README」。
 
 **2026-11-05 — 已适配 DSH 0.2.1-rc.5（当前 Desktop 版本）**
 
@@ -36,14 +81,14 @@
 - DSH `0.1.2-rc.1` 重构了 Web 客户端的插槽体系：`slots.register()` 现在只是纯粹的「挂载」API，若目标插槽尚未由**父条目的 children table 宣告**，会直接抛错。composer 子树（包括 `conversation.composer.dock`）是由会话 UI 树**惰性宣告**的——时机在 plugin（loader 条目）apply 之后，因此原先在 `apply()` 中直接调用 `ctx.slots.register(...)` 会失败，报 `slot "conversation.composer.dock" is not declared (a parent entry's children table must declare it)`，DSH 启动时提示 **Failed to load plugins**。
 - 现在改为通过 `ctx.slots.inject("conversation.composer.dock", () => ctx.slots.register({ name, id, order }, …))` 注册——与原生 StatsLine 使用同一插槽的方式完全一致。`slots.inject` 在插槽已宣告时立即执行工厂函数，否则等待其（重新）宣告后再执行；等待与注册的生命周期都挂在插件自己的 fiber 上，卸载时自动清理。
 - 除此之外无需任何改动：dock 插槽的标准 props（`useSession` / `useProjection`）、`[data-composer-card]` / `data-slot` DOM 标记以及 HUD 读取的所有投影在 `0.1.2-rc.1` 中均未变化（已对照所安装的包源码逐一确认）。
-- 同步更新文档（本文件与 `README.md`）。
+- 同步更新文档（两份 README）。
 
 **2026-08-24 — 更新尖峰 / 错峰时段**
 
 - `CLOCK` 徽章现按 DeepSeek 官方峰谷定价执行：尖峰 = **周一至周五** 北京时间 09:00-12:00 / 14:00-18:00（即周一至周五 01:00-04:00 / 06:00-10:00 UTC）；**周末一律为错峰**（此前周末这两个时段会被错误显示为 PEAK）。
 - 将判断重构为纯函数 `isDsApiPeak(date)`（按北京日历的星期判断，任何时区都正确），并加入 test-only 的 `__test` 导出。
 - 新增 3 组单元测试，覆盖窗口边界、周末与北京/UTC 跨日边界（共 9 个测试，全部通过）。
-- 同步更新文档（本文件、`README.md` 与「参数调优」一节）。
+- 同步更新文档（两份 README 与「参数调优」一节）。
 
 ## 从旧版 DSH 升级
 
@@ -105,45 +150,6 @@ HUD 会根据聊天栏右侧的可用空间自适应（通过 ResizeObserver 实
 `mini` 档位在窄窗口下的效果：
 
 ![mini 档位](docs/mini.png)
-
-## 环境要求
-
-- DeepSeek Harness `dsh` **0.2.1-rc.5**（macOS；Desktop 应用内置运行时）。插槽注册为「先宣告、后挂载」，因此插件通过 `ctx.slots.inject(...)` 模式注册——见更新记录
-- pnpm（用于插件管理）
-
-## 安装
-
-### Desktop 应用（推荐）
-
-1. 打开侧边栏的 **插件（Plugins）** 页，点 **添加插件（Add plugin）**。
-2. 选 **安装第三方插件（Install a third-party plugin）**，粘贴下面任意一种：
-
-   | 形式 | 示例 |
-   | --- | --- |
-   | Git 地址 | `https://github.com/lauytgary/dsh_hud_plugin` |
-   | 本地仓库 | `/absolute/path/to/dsh-stats-hud` |
-   | npm 包名 | `dsh-stats-hud`（尚未发布） |
-
-3. 点 **安装（Install）**，等 pnpm 跑完，再点 **立即启用（Enable now）**。
-4. HUD 会立刻出现在对话最右侧——无需重启，也无需刷新页面。
-
-**插件 → 已安装** 里的卡片会显示它的来源 spec；用本地仓库（`link:`）最方便跟进更新：`git pull` 之后客户端部分会自动热重载。
-
-### 命令行
-
-```sh
-dsh plugin --profile <profile> add https://github.com/lauytgary/dsh_hud_plugin
-```
-
-Desktop 应用用 `--profile desktop`，`dsh web` 用 `web`。该命令会写入依赖**并**选中 bundle，但运行中的宿主只在启动时组合：装完**重启宿主**（`dsh web` 重启后还需刷新页面）。本地路径会以 `link:` 依赖安装，修改 `lib/client.js` 无需重装——`@deepseek-ai/dsh-client-hmr` 会把插件重新应用进正在运行的页面。
-
-### 确认装好了
-
-- **插件 → 已安装** 中 `dsh-stats-hud` 的开关为开启：
-
-  ![插件页中已安装并启用的 dsh-stats-hud](docs/plugin_chi.png)
-
-- 会话记录过至少一步之后，HUD 竖栏出现在窗口最右侧。
 
 ## 故障排查
 

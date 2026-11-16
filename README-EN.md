@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**English** · [**简体中文**](README-CN.md)
+**English** · [**简体中文**](README.md)
 
 </div>
 
@@ -14,7 +14,52 @@ A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
 
 ![screenshot](docs/screenshot.png)
 
+## Install
+
+### Requirements
+
+- DeepSeek Harness `dsh` **0.2.1-rc.5** (macOS; the Desktop app's bundled runtime). Slot registration is declaration-gated, so the plugin registers through the `ctx.slots.inject(...)` pattern — see Changelog
+- pnpm (for plugin management)
+
+### Desktop app (recommended)
+
+1. Open the **Plugins** page in the sidebar and press **Add plugin**.
+2. Pick **Install a third-party plugin** and paste one of these:
+
+   | Spec | Example |
+   | --- | --- |
+   | Git address | `https://github.com/lauytgary/dsh_hud_plugin` |
+   | Local checkout | `/absolute/path/to/dsh-stats-hud` |
+   | npm package | `dsh-stats-hud` (not published yet) |
+
+3. Press **Install**, let pnpm finish, then press **Enable now**.
+4. The HUD appears at the far right of the conversation right away — no restart, no page refresh.
+
+The card under **Plugins → Installed** always shows the spec it was installed from, so a local checkout (`link:`) is the easiest way to keep up: `git pull` and the client half hot-reloads.
+
+### Command line
+
+```sh
+dsh plugin --profile <profile> add https://github.com/lauytgary/dsh_hud_plugin
+```
+
+Use `--profile desktop` for the Desktop app and `web` for a `dsh web` profile. The command installs the dependency **and** selects the bundle, but a running host only composes it at boot: **restart the host** afterwards (refresh the page after a `dsh web` restart). A local path installs as a `link:` dependency, so editing `lib/client.js` never needs a reinstall — `@deepseek-ai/dsh-client-hmr` re-applies the plugin in the running page.
+
+### Check that it works
+
+- **Plugins → Installed** lists `dsh-stats-hud` with its switch on:
+
+  ![dsh-stats-hud installed and enabled on the Plugins page](docs/plugin_eng.png)
+
+- The HUD column sits at the far right edge of the window once the session has recorded a step.
+
 ## Changelog
+
+**2026-11-17 — Simplified Chinese README by default; Install moved up**
+
+- `README.md` is now the Simplified Chinese README (the page GitHub renders by default); the English one moved to `README-EN.md`, and the language switcher on both sides points there. `README-CN.md` no longer exists (it was renamed, so git history follows).
+- Layout: Install now comes right after the intro, with Requirements folded in as its first subsection; the Changelog sits below it. Every other section keeps its previous order.
+- Historical changelog notes that pointed at `README-CN.md` now just say "both READMEs".
 
 **2026-11-05 — Adapted to DSH 0.2.1-rc.5 (the current Desktop release)**
 
@@ -36,14 +81,14 @@ A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
 - DSH `0.1.2-rc.1` reworked the web client's slot system: `slots.register()` is now a pure *attachment* API and throws unless the target slot has already been **declared by a parent entry's children table**. The composer subtree — including `conversation.composer.dock` — is declared lazily by the conversation UI tree, i.e. *after* plugin loader entries have applied, so the old direct `ctx.slots.register(...)` call in `apply()` failed with `slot "conversation.composer.dock" is not declared (a parent entry's children table must declare it)` and DSH showed **Failed to load plugins** at startup.
 - Registration now goes through `ctx.slots.inject("conversation.composer.dock", () => ctx.slots.register({ name, id, order }, …))` — the same pattern the stock StatsLine uses for the very same slot. `slots.inject` runs the factory immediately when the slot is already declared, otherwise waits for its (re)declaration, and the whole wait + registration rides the plugin's own fiber for cleanup.
 - Nothing else needed to change: the dock slot's standard props (`useSession` / `useProjection`), the `[data-composer-card]` / `data-slot` DOM markers and every projection the HUD reads are unchanged in `0.1.2-rc.1` (verified against the installed package sources).
-- Docs synced (this README and `README-CN.md`).
+- Docs synced (both READMEs).
 
 **2026-08-24 — Peak / off-peak windows updated**
 
 - `CLOCK` badge now follows the official DeepSeek API peak-valley pricing: peak = **Mon–Fri** Beijing 09:00-12:00 / 14:00-18:00 (i.e. Mon–Fri 01:00-04:00 / 06:00-10:00 UTC); **weekends are always OFF-PEAK** (previously weekends inside those windows were wrongly shown as PEAK).
 - Refactored the check into the pure `isDsApiPeak(date)` helper (weekday resolved on the Beijing calendar, so it is correct in any timezone) and exposed it via the test-only `__test` export.
 - Added 3 unit-test groups covering window edges, weekends and the Beijing/UTC day boundary (9 tests total, all green).
-- Docs synced (this README, `README-CN.md` and the `Tuning` section).
+- Docs synced (both READMEs and the `Tuning` section).
 
 ## Upgrading from an older DSH
 
@@ -107,45 +152,6 @@ The window width is a hard floor: below 800px the panel hides even with room to 
 The `mini` tier in a narrow window:
 
 ![mini tier](docs/mini.png)
-
-## Requirements
-
-- DeepSeek Harness `dsh` **0.2.1-rc.5** (macOS; the Desktop app's bundled runtime). Slot registration is declaration-gated, so the plugin registers through the `ctx.slots.inject(...)` pattern — see Changelog
-- pnpm (for plugin management)
-
-## Install
-
-### Desktop app (recommended)
-
-1. Open the **Plugins** page in the sidebar and press **Add plugin**.
-2. Pick **Install a third-party plugin** and paste one of these:
-
-   | Spec | Example |
-   | --- | --- |
-   | Git address | `https://github.com/lauytgary/dsh_hud_plugin` |
-   | Local checkout | `/absolute/path/to/dsh-stats-hud` |
-   | npm package | `dsh-stats-hud` (not published yet) |
-
-3. Press **Install**, let pnpm finish, then press **Enable now**.
-4. The HUD appears at the far right of the conversation right away — no restart, no page refresh.
-
-The card under **Plugins → Installed** always shows the spec it was installed from, so a local checkout (`link:`) is the easiest way to keep up: `git pull` and the client half hot-reloads.
-
-### Command line
-
-```sh
-dsh plugin --profile <profile> add https://github.com/lauytgary/dsh_hud_plugin
-```
-
-Use `--profile desktop` for the Desktop app and `web` for a `dsh web` profile. The command installs the dependency **and** selects the bundle, but a running host only composes it at boot: **restart the host** afterwards (refresh the page after a `dsh web` restart). A local path installs as a `link:` dependency, so editing `lib/client.js` never needs a reinstall — `@deepseek-ai/dsh-client-hmr` re-applies the plugin in the running page.
-
-### Check that it works
-
-- **Plugins → Installed** lists `dsh-stats-hud` with its switch on:
-
-  ![dsh-stats-hud installed and enabled on the Plugins page](docs/plugin_eng.png)
-
-- The HUD column sits at the far right edge of the window once the session has recorded a step.
 
 ## Troubleshooting
 

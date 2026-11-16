@@ -1,7 +1,7 @@
 # docs assets
 
-Images in this folder are embedded in the READMEs (`README.md` /
-`README-CN.md`):
+Images in this folder are embedded in the READMEs (`README.md`, Simplified
+Chinese and the default page, and `README-EN.md`, English):
 
 - `social-preview.png` — hero banner shown at the very top of both READMEs
 - `screenshot.png` / `mouse_over.png` / `mini.png` — full-panel, hover-tooltip
