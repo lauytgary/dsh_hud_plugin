@@ -10,7 +10,7 @@
 
 为 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 打造的科幻风格 HUD：把会话的实时统计数据变成游戏风格的经验条，以**固定在 Web 界面最右侧边缘的垂直竖栏**形式呈现——完全不改动原有的统计行。
 
-> **安装：** 在 DeepSeek Harness Desktop 应用中打开 **插件 → 添加插件**，粘贴 `https://github.com/lauytgary/dsh_hud_plugin`，点 **安装**，再点 **立即启用**。[完整步骤 ↓](#安装)
+> **安装：** 在 DeepSeek Harness Desktop 应用中打开侧边栏 **更多 → 浏览更多插件**，点 **添加插件**，粘贴 `https://github.com/lauytgary/dsh_hud_plugin`，点 **安装**，再点 **立即启用**。[完整步骤 ↓](#安装)
 
 ![截图](docs/screenshot.png)
 
@@ -23,16 +23,19 @@
 
 ### Desktop 应用（推荐）
 
-1. 打开侧边栏的 **插件（Plugins）** 页，点 **添加插件（Add plugin）**。
-2. 选 **安装第三方插件（Install a third-party plugin）**，粘贴下面任意一种：
+1. 打开侧边栏的 **更多**，点 **浏览更多插件**，进入「插件」页。
+2. 点右上角的 **添加插件**。
+3. 在输入框粘贴下面的地址（安装源选 **npm 官方源** 即可，Git 地址不经过 npm registry）：
 
    | 形式 | 示例 |
    | --- | --- |
    | Git 地址 | `https://github.com/lauytgary/dsh_hud_plugin` |
    | 本地仓库 | `/absolute/path/to/dsh-stats-hud` |
 
-3. 点 **安装（Install）**，等 pnpm 跑完，再点 **立即启用（Enable now）**。
-4. HUD 会立刻出现在对话最右侧——无需重启，也无需刷新页面。
+4. 点 **安装**，等 pnpm 跑完，再点 **立即启用**。
+5. HUD 会立刻出现在对话最右侧——无需重启，也无需刷新页面。
+
+![添加插件：粘贴 GitHub 地址后点「安装」](docs/plugin_install_chi.png)
 
 **插件 → 已安装** 里的卡片会显示它的来源 spec；用本地仓库（`link:`）最方便跟进更新：`git pull` 之后客户端部分会自动热重载。
 
@@ -60,6 +63,7 @@ Desktop 应用用 `--profile desktop`，`dsh web` 用 `web`。该命令会写入
 - 排版：简介之后直接进入「安装」，环境要求并入安装一节作为第一小节；更新记录移到安装之后，其余章节顺序不变。
 - 历史更新记录里指向 `README-CN.md` 的说法统一改成「两份 README」。
 - 安装表格移除 npm 包名那一行（套件尚未发布，避免被当成可用途径）；将来发布到 npm 后再加回。
+- 安装入口改为侧边栏 **更多 → 浏览更多插件**（进入插件页后再点 **添加插件**），并补上 0.2.1 的添加插件对话框截图 `docs/plugin_install_chi.png` / `docs/plugin_install_eng.png`。
 
 **2026-11-05 — 已适配 DSH 0.2.1-rc.5（当前 Desktop 版本）**
 

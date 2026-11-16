@@ -10,7 +10,7 @@
 
 A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness): the session's stats become game-style level bars in a **vertical column fixed to the far right edge** of the web UI — without touching the original stats line.
 
-> **Install:** in the DeepSeek Harness Desktop app open **Plugins → Add plugin**, paste `https://github.com/lauytgary/dsh_hud_plugin`, press **Install**, then **Enable now**. [Full instructions ↓](#install)
+> **Install:** in the DeepSeek Harness Desktop app open **More → Browse other plugins** in the sidebar, press **Add plugin**, paste `https://github.com/lauytgary/dsh_hud_plugin`, press **Install**, then **Enable now**. [Full instructions ↓](#install)
 
 ![screenshot](docs/screenshot.png)
 
@@ -23,16 +23,19 @@ A sci-fi HUD for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harn
 
 ### Desktop app (recommended)
 
-1. Open the **Plugins** page in the sidebar and press **Add plugin**.
-2. Pick **Install a third-party plugin** and paste one of these:
+1. Open **More** in the sidebar and choose **Browse other plugins** to open the **Plugins** page.
+2. Press **Add plugin** in the top-right corner.
+3. Paste one of these (keep the registry on **Official npm registry** — a Git address never goes through npm):
 
    | Spec | Example |
    | --- | --- |
    | Git address | `https://github.com/lauytgary/dsh_hud_plugin` |
    | Local checkout | `/absolute/path/to/dsh-stats-hud` |
 
-3. Press **Install**, let pnpm finish, then press **Enable now**.
-4. The HUD appears at the far right of the conversation right away — no restart, no page refresh.
+4. Press **Install**, let pnpm finish, then press **Enable now**.
+5. The HUD appears at the far right of the conversation right away — no restart, no page refresh.
+
+![The Add plugin dialog with the GitHub address filled in](docs/plugin_install_eng.png)
 
 The card under **Plugins → Installed** always shows the spec it was installed from, so a local checkout (`link:`) is the easiest way to keep up: `git pull` and the client half hot-reloads.
 
@@ -60,6 +63,7 @@ Use `--profile desktop` for the Desktop app and `web` for a `dsh web` profile. T
 - Layout: Install now comes right after the intro, with Requirements folded in as its first subsection; the Changelog sits below it. Every other section keeps its previous order.
 - Historical changelog notes that pointed at `README-CN.md` now just say "both READMEs".
 - Dropped the npm package row from the install table (the package is not published yet, so it should not look like a working option); add it back once it is on npm.
+- Install now starts from the sidebar's **More → Browse other plugins** entry (then **Add plugin**), with fresh 0.2.1 screenshots of the filled-in dialog (`docs/plugin_install_chi.png`, `docs/plugin_install_eng.png`).
 
 **2026-11-05 — Adapted to DSH 0.2.1-rc.5 (the current Desktop release)**
 
