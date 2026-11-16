@@ -57,6 +57,12 @@ Desktop 应用用 `--profile desktop`，`dsh web` 用 `web`。该命令会写入
 
 ## 更新记录
 
+**2026-11-17 — `CONTEXT` 区块新增 `TOTAL` 行（与官方用量合计一致）**
+
+- `CONTEXT` 区块最后多一行 `TOTAL`：数值 = CACHE HIT + CACHE MISSED + OUTPUT，与官方输入框底部那颗 token 用量 pill 是同一个算法（`billedInputTokens(usage) + usage.outputTokens`，已对照 0.2.2 原生 `UsagePill` 源码确认）。上方加一条细分隔线，读起来是「合计」而不是第四个桶。
+- `full` 与 `mini` 两档都加了这一行（`mini` 用短标签 `TOTAL`，与 Step/Turn/HIT/MISS/OUT 并列）。
+- 新增纯函数 `totalTokens(usage)`（进 `__test` 与单元测试，现共 10 个测试），两份 README 的仪表表、响应式表与开发测试清单同步。
+
 **2026-11-17 — 适配 DSH 0.2.2-rc.3：HUD 改为 portal 到 `<body>`**
 
 - 修复升级后 HUD 位置错乱：竖栏不再贴在窗口右侧垂直居中，而是掉到下方、压住输入区，底部被窗口边缘切掉。原因是 0.2.2 把输入区包进 `position: sticky` 且带 `will-change: transform` 的 **composer seat**；带 transform（含 `will-change: transform`）的祖先会成为 `position: fixed` 后代的**包含块**，于是 `top: 50%` / `right: 12px` 变成相对输入区计算，面板被居中在输入区上并溢出窗口底部。DSH 自己的 dock 目录说明也写明：fixed 浮层必须 portal 到 document body，因为 docked composer 会把它包住。
@@ -133,7 +139,7 @@ failed to apply loader entry … (dsh-stats-hud): slot "conversation.composer.do
 
 `0.2.2-rc.3` 把输入区包进带 `will-change: transform` 的 composer seat，旧的
 `position: fixed` 面板会以它为包含块：竖栏不再贴右边缘垂直居中，而是掉到下方、
-压住输入区，底部被窗口边缘切掉。把插件更新到 `0.1.3`（面板改为 portal 到
+压住输入区，底部被窗口边缘切掉。把插件更新到 `0.1.3` 或更新（面板改为 portal 到
 `<body>`）即可；客户端部分会热重载，页面没变化时强制刷新一次
 （`Cmd+Shift+R`）。
 
@@ -147,7 +153,7 @@ failed to apply loader entry … (dsh-stats-hud): slot "conversation.composer.do
 | `THROUGHPUT` 仪表盘 | tokens/s（吞吐量），标题居中，组合读数居中（`146 tok/s`） | 红线自动缩放 200→300→400…（弧形刻度随之变化） | — |
 | `CONTEXT USAGE` 条 | 上下文窗口使用百分比，3 段：系统提示（灰）/ 工具（蓝）/ 消息（紫），按 token 占比 | 0-100% | ≥80% 整条变实心红；悬停显示三个 token 数 |
 | `CACHE HIT` 条 | 缓存命中百分比 | 0-100% | <50% 红、<80% 黄、≥80% 绿 |
-| `CONTEXT` 滚动计数器 | 三行里程表：CACHE HIT（绿）/ CACHE MISSED（橙）/ OUTPUT（粉） | 挂载时滚筒从 0 开始旋转；数字增加时向上滚动（9→0 进位），减少时向下滚动 | — |
+| `CONTEXT` 滚动计数器 | 四行里程表：CACHE HIT（绿）/ CACHE MISSED（橙）/ OUTPUT（粉），加上一条细分隔线下的 **TOTAL**（青，= CACHE HIT + CACHE MISSED + OUTPUT，与官方输入框底部的 token 用量合计一致） | 挂载时滚筒从 0 开始旋转；数字增加时向上滚动（9→0 进位），减少时向下滚动 | — |
 
 Agent 运行期间，整个面板会「呼吸」起伏，进度条随之脉动。
 
@@ -162,7 +168,7 @@ HUD 会根据聊天栏右侧的可用空间自适应（通过 ResizeObserver 实
 | 档位 | 条件 | 显示内容 |
 | --- | --- | --- |
 | `full` | 窗口 ≥ 800px 且可用空间 ≥ 180px | 全部内容 |
-| `mini` | 窗口 ≥ 800px 且可用空间 < 180px | 时钟（短版 PEAK/OFF PEAK 徽章）+ 紧凑滚动行（Step/Turn/HIT/MISS/OUT） |
+| `mini` | 窗口 ≥ 800px 且可用空间 < 180px | 时钟（短版 PEAK/OFF PEAK 徽章）+ 紧凑滚动行（Step/Turn/HIT/MISS/OUT/TOTAL） |
 | `hidden` | 窗口 < 800px | 不显示（元素保持挂载，`display:none`） |
 
 窗口宽度是硬性底线：低于 800px 时即使空间充足也会隐藏面板，只有测得的空间决定 `full` 还是 `mini`（完整面板需要 164px + 12px 边距）。窄窗口下 `mini` 可能与聊天栏轻微重叠——由于面板可点击穿透，这很安全。若无法测量聊天栏，面板会回退为 `full`。
@@ -217,7 +223,7 @@ npm test   # 纯函数单元测试（node:test，零依赖；需要 Node ≥ 18�
 ```
 
 测试会用 Node VM 加载 `lib/client.js`（stub 掉 loader，无需 DOM），覆盖纯函数：
-`formatTokens` / `formatDuration` / `formatTps` / `tierOf` / `billedInputTokens` / `cacheHitPercent` / `isDsApiPeak`。
+`formatTokens` / `formatDuration` / `formatTps` / `tierOf` / `billedInputTokens` / `totalTokens` / `cacheHitPercent` / `isDsApiPeak`。
 test-only 的 `__test` 导出由 `DSH_HUD_TEST` 环境变量门控，浏览器端不会触发，bundle 不受影响。
 
 ## 参数调优

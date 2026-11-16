@@ -34,7 +34,7 @@ function loadBundle() {
 	return mod.__test;
 }
 
-const { formatTokens, formatDuration, formatTps, tierOf, billedInputTokens, cacheHitPercent, isDsApiPeak } = loadBundle();
+const { formatTokens, formatDuration, formatTps, tierOf, billedInputTokens, totalTokens, cacheHitPercent, isDsApiPeak } = loadBundle();
 
 test("formatTokens", () => {
 	assert.equal(formatTokens(0), "0");
@@ -75,6 +75,14 @@ test("tierOf", () => {
 test("billedInputTokens", () => {
 	const usage = { uncachedInputTokens: 100, cacheReadTokens: 50, cacheWriteTokens: 25 };
 	assert.equal(billedInputTokens(usage), 175);
+});
+
+test("totalTokens", () => {
+	// the stock usage pill's number: prompt side (hit + missed) + output
+	const usage = { uncachedInputTokens: 100, cacheReadTokens: 50, cacheWriteTokens: 25, outputTokens: 75 };
+	assert.equal(totalTokens(usage), 250);
+	assert.equal(totalTokens({ uncachedInputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 42 }), 42);
+	assert.equal(totalTokens({ uncachedInputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0, outputTokens: 0 }), 0);
 });
 
 test("cacheHitPercent", () => {

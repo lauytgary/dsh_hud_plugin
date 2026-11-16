@@ -57,6 +57,12 @@ Use `--profile desktop` for the Desktop app and `web` for a `dsh web` profile. T
 
 ## Changelog
 
+**2026-11-17 — `CONTEXT` gains a `TOTAL` row (the stock usage sum)**
+
+- The `CONTEXT` block ends with a new `TOTAL` row: CACHE HIT + CACHE MISSED + OUTPUT, which is exactly the number the stock token-usage pill under the composer prints (`billedInputTokens(usage) + usage.outputTokens`, confirmed against the 0.2.2 `UsagePill` source). A hairline above it keeps it reading as a sum rather than a fourth bucket.
+- Both tiers get the row (`mini` uses the short `TOTAL` label beside Step/Turn/HIT/MISS/OUT).
+- New pure helper `totalTokens(usage)` (exported through `__test` and covered by the unit tests, now 10 in total); the instrument table, responsive table and development list are mirrored in both READMEs.
+
 **2026-11-17 — Adapted to DSH 0.2.2-rc.3: the HUD is portalled into `<body>`**
 
 - Fixed the post-upgrade misplacement: the column was no longer centred against the window's right edge but dropped low, covering the composer, with its bottom clipped by the window edge. DSH 0.2.2 wraps the composer in a `position: sticky` **composer seat** carrying `will-change: transform`; an ancestor with a transform (including `will-change: transform`) becomes the **containing block** of `position: fixed` descendants, so `top: 50%` / `right: 12px` resolved against the composer instead of the viewport and the panel overflowed the window bottom. DSH's own dock catalog states the same rule: a fixed overlay must portal to the document body because the docked composer contains it.
@@ -137,7 +143,7 @@ If the alert still shows after the restart, hard-refresh the browser page
 `will-change: transform`, and an old `position: fixed` panel takes it as its
 containing block: the column stops being centred against the right edge and
 instead sits low, covering the composer, with its bottom clipped by the window.
-Update the plugin to `0.1.3` (the panel now portals to `<body>`); the client
+Update the plugin to `0.1.3` or later (the panel now portals to `<body>`); the client
 half hot-reloads, so just hard-refresh the page (`Cmd+Shift+R`) if nothing
 moves.
 
@@ -151,7 +157,7 @@ moves.
 | `THROUGHPUT` gauge | tokens/s (throughput), centered title, combined centered readout (`146 tok/s`) | Redline auto-scales 200→300→400… (arc ticks follow) | — |
 | `CONTEXT USAGE` bar | Context-window usage % with 3 segments: Sys Prompt (gray) / Tools (blue) / Messages (purple) by token ratio | 0-100% | ≥80% whole bar turns solid red; hover shows the three token counts |
 | `CACHE HIT` bar | Cache-hit % | 0-100% | <50% red, <80% yellow, ≥80% green |
-| `CONTEXT` rolling counter | Three odometer rows: CACHE HIT (green) / CACHE MISSED (orange) / OUTPUT (pink) | Drums spin up from 0 on mount; digits roll up on increase (carry 9→0), down on decrease | — |
+| `CONTEXT` rolling counter | Four odometer rows: CACHE HIT (green) / CACHE MISSED (orange) / OUTPUT (pink), plus a **TOTAL** below a hairline (cyan, = CACHE HIT + CACHE MISSED + OUTPUT — the same sum the stock usage pill shows under the composer) | Drums spin up from 0 on mount; digits roll up on increase (carry 9→0), down on decrease | — |
 
 While the agent is running the whole panel breathes and bars pulse.
 
@@ -166,7 +172,7 @@ The HUD adapts to the free space right of the chat column (measured live with a 
 | Tier | Condition | Shows |
 | --- | --- | --- |
 | `full` | Window ≥ 800px and free space ≥ 180px | Everything |
-| `mini` | Window ≥ 800px and free space < 180px | Clock (short PEAK/OFF PEAK badge) + compact rolling rows (Step/Turn/HIT/MISS/OUT) |
+| `mini` | Window ≥ 800px and free space < 180px | Clock (short PEAK/OFF PEAK badge) + compact rolling rows (Step/Turn/HIT/MISS/OUT/TOTAL) |
 | `hidden` | Window < 800px | Nothing (element stays mounted, `display:none`) |
 
 The window width is a hard floor: below 800px the panel hides even with room to spare, and only the measured space decides `full` vs `mini` (the full panel needs 164px + 12px margin). `mini` may slightly overlap the chat on narrow windows — safe because the panel is click-through. If the chat column can't be measured, the panel falls back to `full`.
@@ -222,7 +228,7 @@ npm test   # pure-function unit tests (node:test, no dependencies; Node ≥ 18)
 
 The tests load `lib/client.js` in a Node VM with a stubbed loader (no DOM
 needed) and exercise the pure helpers — `formatTokens`, `formatDuration`,
-`formatTps`, `tierOf`, `billedInputTokens`, `cacheHitPercent`, `isDsApiPeak`. The test-only
+`formatTps`, `tierOf`, `billedInputTokens`, `totalTokens`, `cacheHitPercent`, `isDsApiPeak`. The test-only
 `__test` export is gated behind the `DSH_HUD_TEST` env var, so the browser
 bundle is unaffected.
 
